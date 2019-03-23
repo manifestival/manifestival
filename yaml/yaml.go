@@ -5,7 +5,9 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
+	"path"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -23,16 +25,21 @@ var (
 		"Ignores resources managed by the Operator Lifecycle Manager")
 	denamespace = flag.Bool("override-namespace", false,
 		"Ignores Namespace resources and creates all others in watched namespace")
+	Recursive = flag.Bool("recursive", false,
+		"If filename is a directory, process all manifests recursively")
 	log = logf.Log.WithName("manifests")
 )
 
-func NewYamlFile(path string, config *rest.Config) *YamlFile {
+func NewYamlManifest(pathname string, config *rest.Config) (*YamlManifest, error) {
 	client, _ := dynamic.NewForConfig(config)
-	log.Info("Reading YAML file", "name", path)
-	return &YamlFile{name: path, resources: parse(path), dynamicClient: client}
+	log.Info("Reading YAML file", "name", pathname)
+	if _, err := os.Stat(pathname); err != nil {
+		return nil, err
+	}
+	return &YamlManifest{resources: parse(pathname), dynamicClient: client}, nil
 }
 
-func (f *YamlFile) Apply(owner OperandOwner) error {
+func (f *YamlManifest) Apply(owner OperandOwner) error {
 	for _, spec := range f.resources {
 		if !isClusterScoped(spec.GetKind()) {
 			// apparently reference counting for cluster-scoped
@@ -67,7 +74,7 @@ func (f *YamlFile) Apply(owner OperandOwner) error {
 	return nil
 }
 
-func (f *YamlFile) Delete() error {
+func (f *YamlManifest) Delete() error {
 	a := make([]unstructured.Unstructured, len(f.resources))
 	copy(a, f.resources)
 	// we want to delete in reverse order
@@ -95,7 +102,7 @@ func (f *YamlFile) Delete() error {
 	return nil
 }
 
-func (f *YamlFile) ResourceNames() []string {
+func (f *YamlManifest) ResourceNames() []string {
 	var names []string
 	for _, spec := range f.resources {
 		names = append(names, fmt.Sprintf("%s (%s)", spec.GetName(), spec.GroupVersionKind()))
@@ -103,8 +110,7 @@ func (f *YamlFile) ResourceNames() []string {
 	return names
 }
 
-type YamlFile struct {
-	name          string
+type YamlManifest struct {
 	dynamicClient dynamic.Interface
 	resources     []unstructured.Unstructured
 }
@@ -114,9 +120,9 @@ type OperandOwner interface {
 	GroupVersionKind() schema.GroupVersionKind
 }
 
-func parse(filename string) []unstructured.Unstructured {
+func parse(pathname string) []unstructured.Unstructured {
 	in, out := make(chan []byte, 10), make(chan unstructured.Unstructured, 10)
-	go read(filename, in)
+	go read(pathname, in)
 	go decode(in, out)
 	result := []unstructured.Unstructured{}
 	for spec := range out {
@@ -131,15 +137,38 @@ func parse(filename string) []unstructured.Unstructured {
 	return result
 }
 
-func buffer(file *os.File) []byte {
-	var size int64 = bytes.MinRead
-	if fi, err := file.Stat(); err == nil {
-		size = fi.Size()
+func read(pathname string, sink chan []byte) {
+	defer close(sink)
+	file, err := os.Stat(pathname)
+	if err != nil {
+		log.Error(err, "Unable to get file info")
+		return
 	}
-	return make([]byte, size)
+	if file.IsDir() {
+		readDir(pathname, sink)
+	} else {
+		readFile(pathname, sink)
+	}
 }
 
-func read(filename string, sink chan []byte) {
+func readDir(pathname string, sink chan []byte) {
+	list, err := ioutil.ReadDir(pathname)
+	if err != nil {
+		log.Error(err, "Unable to read directory")
+		return
+	}
+	for _, f := range list {
+		name := path.Join(pathname, f.Name())
+		switch {
+		case f.IsDir() && *Recursive:
+			readDir(name, sink)
+		case !f.IsDir():
+			readFile(name, sink)
+		}
+	}
+}
+
+func readFile(filename string, sink chan []byte) {
 	file, err := os.Open(filename)
 	if err != nil {
 		panic(err.Error())
@@ -156,7 +185,6 @@ func read(filename string, sink chan []byte) {
 		copy(b, buf)
 		sink <- b
 	}
-	close(sink)
 }
 
 func decode(in chan []byte, out chan unstructured.Unstructured) {
@@ -172,6 +200,14 @@ func decode(in chan []byte, out chan unstructured.Unstructured) {
 		out <- spec
 	}
 	close(out)
+}
+
+func buffer(file *os.File) []byte {
+	var size int64 = bytes.MinRead
+	if fi, err := file.Stat(); err == nil {
+		size = fi.Size()
+	}
+	return make([]byte, size)
 }
 
 func pluralize(kind string) string {
