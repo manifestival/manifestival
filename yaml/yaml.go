@@ -30,13 +30,10 @@ var (
 	log = logf.Log.WithName("manifests")
 )
 
-func NewYamlManifest(pathname string, config *rest.Config) (*YamlManifest, error) {
+func NewYamlManifest(pathname string, config *rest.Config) *YamlManifest {
 	client, _ := dynamic.NewForConfig(config)
 	log.Info("Reading YAML file", "name", pathname)
-	if _, err := os.Stat(pathname); err != nil {
-		return nil, err
-	}
-	return &YamlManifest{resources: parse(pathname), dynamicClient: client}, nil
+	return &YamlManifest{resources: parse(pathname), dynamicClient: client}
 }
 
 func (f *YamlManifest) Apply(owner OperandOwner) error {

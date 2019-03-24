@@ -32,7 +32,7 @@ var parsetests = []ParseTest{
 func TestParsing(t *testing.T) {
 	for _, fixture := range parsetests {
 		*yaml.Recursive = fixture.recursive
-		f, _ := yaml.NewYamlManifest(fixture.path, &rest.Config{})
+		f := yaml.NewYamlManifest(fixture.path, &rest.Config{})
 		actual := f.ResourceNames()
 		if !reflect.DeepEqual(actual, fixture.resources) {
 			t.Errorf("Failed for '%s'; got '%s'; want '%s'", fixture.path, actual, fixture.resources)
@@ -41,8 +41,8 @@ func TestParsing(t *testing.T) {
 }
 
 func TestMissingFile(t *testing.T) {
-	_, err := yaml.NewYamlManifest("testdata/missing", &rest.Config{})
-	if err == nil {
+	f := yaml.NewYamlManifest("testdata/missing", &rest.Config{})
+	if len(f.ResourceNames()) > 0 {
 		t.Error("Failed to handle missing file")
 	}
 }
