@@ -71,7 +71,7 @@ func (f *YamlManifest) Apply(owner OperandOwner) error {
 			// only overwrite fields set in our resource
 			content := current.UnstructuredContent()
 			for k, v := range spec.UnstructuredContent() {
-				if k == "metadata" || k == "spec" {
+				if k == "metadata" || k == "spec" || k == "data" {
 					m := v.(map[string]interface{})
 					for kn, vn := range m {
 						unstructured.SetNestedField(content, vn, k, kn)
