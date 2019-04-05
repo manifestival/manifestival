@@ -53,19 +53,37 @@ func (f *YamlManifest) Apply(owner OperandOwner) error {
 		if err != nil {
 			return err
 		}
-		if _, err = c.Get(spec.GetName(), v1.GetOptions{}); err != nil {
+		current, err := c.Get(spec.GetName(), v1.GetOptions{})
+		if err != nil {
+			// Create new one
 			if !errors.IsNotFound(err) {
 				return err
 			}
-		} else {
-			continue
-		}
-		log.Info("Creating", "type", spec.GroupVersionKind(), "name", spec.GetName())
-		if _, err = c.Create(&spec, v1.CreateOptions{}); err != nil {
-			if errors.IsAlreadyExists(err) {
-				continue
+			log.Info("Creating", "type", spec.GroupVersionKind(), "name", spec.GetName())
+			if _, err = c.Create(&spec, v1.CreateOptions{}); err != nil {
+				return err
 			}
-			return err
+		} else {
+			// Update existing one
+			log.Info("Updating", "type", spec.GroupVersionKind(), "name", spec.GetName())
+			// We need to preserve the current content, specifically
+			// 'metadata.resourceVersion' and 'spec.clusterIP', so we
+			// only overwrite fields set in our resource
+			content := current.UnstructuredContent()
+			for k, v := range spec.UnstructuredContent() {
+				if k == "metadata" || k == "spec" {
+					m := v.(map[string]interface{})
+					for kn, vn := range m {
+						unstructured.SetNestedField(content, vn, k, kn)
+					}
+				} else {
+					content[k] = v
+				}
+			}
+			current.SetUnstructuredContent(content)
+			if _, err = c.Update(current, v1.UpdateOptions{}); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
