@@ -58,6 +58,9 @@ func ByOLM(u *unstructured.Unstructured) bool {
 		"customresourcedefinition", "serviceaccount":
 		return false
 	}
+	if !isClusterScoped(u.GetKind()) {
+		u.SetNamespace("")
+	}
 	return true
 }
 
