@@ -23,73 +23,77 @@ import (
 var (
 	olm = flag.Bool("olm", false,
 		"Ignores resources managed by the Operator Lifecycle Manager")
-	denamespace = flag.Bool("override-namespace", false,
-		"Ignores Namespace resources and creates all others in watched namespace")
 	Recursive = flag.Bool("recursive", false,
 		"If filename is a directory, process all manifests recursively")
 	log = logf.Log.WithName("manifests")
 )
 
+type YamlManifest struct {
+	dynamicClient dynamic.Interface
+	resources     []unstructured.Unstructured
+}
+
 func NewYamlManifest(pathname string, config *rest.Config) *YamlManifest {
 	client, _ := dynamic.NewForConfig(config)
 	log.Info("Reading YAML file", "name", pathname)
-	return &YamlManifest{resources: parse(pathname), dynamicClient: client}
+	result := &YamlManifest{resources: parse(pathname), dynamicClient: client}
+	if *olm {
+		return result.Filter(ByOLM)
+	} else {
+		return result
+	}
 }
 
-func (f *YamlManifest) Apply(owner OperandOwner) error {
+func (f *YamlManifest) ApplyAll() error {
 	for _, spec := range f.resources {
-		if !isClusterScoped(spec.GetKind()) {
-			// apparently reference counting for cluster-scoped
-			// resources is broken, so trust the GC only for ns-scoped
-			// dependents
-			spec.SetOwnerReferences([]v1.OwnerReference{*v1.NewControllerRef(owner, owner.GroupVersionKind())})
-			// overwrite YAML resource to match target
-			if *denamespace {
-				spec.SetNamespace(owner.GetNamespace())
-			}
-
-		}
-		c, err := client(spec, f.dynamicClient)
-		if err != nil {
+		if err := f.Apply(&spec); err != nil {
 			return err
-		}
-		current, err := c.Get(spec.GetName(), v1.GetOptions{})
-		if err != nil {
-			// Create new one
-			if !errors.IsNotFound(err) {
-				return err
-			}
-			log.Info("Creating", "type", spec.GroupVersionKind(), "name", spec.GetName())
-			if _, err = c.Create(&spec, v1.CreateOptions{}); err != nil {
-				return err
-			}
-		} else {
-			// Update existing one
-			log.Info("Updating", "type", spec.GroupVersionKind(), "name", spec.GetName())
-			// We need to preserve the current content, specifically
-			// 'metadata.resourceVersion' and 'spec.clusterIP', so we
-			// only overwrite fields set in our resource
-			content := current.UnstructuredContent()
-			for k, v := range spec.UnstructuredContent() {
-				if k == "metadata" || k == "spec" || k == "data" {
-					m := v.(map[string]interface{})
-					for kn, vn := range m {
-						unstructured.SetNestedField(content, vn, k, kn)
-					}
-				} else {
-					content[k] = v
-				}
-			}
-			current.SetUnstructuredContent(content)
-			if _, err = c.Update(current, v1.UpdateOptions{}); err != nil {
-				return err
-			}
 		}
 	}
 	return nil
 }
 
-func (f *YamlManifest) Delete() error {
+func (f *YamlManifest) Apply(spec *unstructured.Unstructured) error {
+	resource, err := f.resource(spec)
+	if err != nil {
+		return err
+	}
+	current, err := resource.Get(spec.GetName(), v1.GetOptions{})
+	if err != nil {
+		// Create new one
+		if !errors.IsNotFound(err) {
+			return err
+		}
+		log.Info("Creating", "type", spec.GroupVersionKind(), "name", spec.GetName())
+		if _, err = resource.Create(spec, v1.CreateOptions{}); err != nil {
+			return err
+		}
+	} else {
+		// Update existing one
+		log.Info("Updating", "type", spec.GroupVersionKind(), "name", spec.GetName())
+		// We need to preserve the current content, specifically
+		// 'metadata.resourceVersion' and 'spec.clusterIP', so we
+		// only overwrite fields set in our resource
+		content := current.UnstructuredContent()
+		for k, v := range spec.UnstructuredContent() {
+			if k == "metadata" || k == "spec" {
+				m := v.(map[string]interface{})
+				for kn, vn := range m {
+					unstructured.SetNestedField(content, vn, k, kn)
+				}
+			} else {
+				content[k] = v
+			}
+		}
+		current.SetUnstructuredContent(content)
+		if _, err = resource.Update(current, v1.UpdateOptions{}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (f *YamlManifest) DeleteAll() error {
 	a := make([]unstructured.Unstructured, len(f.resources))
 	copy(a, f.resources)
 	// we want to delete in reverse order
@@ -97,24 +101,39 @@ func (f *YamlManifest) Delete() error {
 		a[left], a[right] = a[right], a[left]
 	}
 	for _, spec := range a {
-		c, err := client(spec, f.dynamicClient)
-		if err != nil {
+		if err := f.Delete(&spec); err != nil {
 			return err
-		}
-		if _, err = c.Get(spec.GetName(), v1.GetOptions{}); err != nil {
-			if errors.IsNotFound(err) {
-				continue
-			}
-		}
-		log.Info("Deleting", "type", spec.GroupVersionKind(), "name", spec.GetName())
-		if err = c.Delete(spec.GetName(), &v1.DeleteOptions{}); err != nil {
-			// ignore GC race conditions triggered by owner references
-			if !errors.IsNotFound(err) {
-				return err
-			}
 		}
 	}
 	return nil
+}
+
+func (f *YamlManifest) Delete(spec *unstructured.Unstructured) error {
+	resource, err := f.resource(spec)
+	if err != nil {
+		return err
+	}
+	if _, err = resource.Get(spec.GetName(), v1.GetOptions{}); err != nil {
+		if errors.IsNotFound(err) {
+			return nil
+		}
+	}
+	log.Info("Deleting", "type", spec.GroupVersionKind(), "name", spec.GetName())
+	if err = resource.Delete(spec.GetName(), &v1.DeleteOptions{}); err != nil {
+		// ignore GC race conditions triggered by owner references
+		if !errors.IsNotFound(err) {
+			return err
+		}
+	}
+	return nil
+}
+
+func (f *YamlManifest) DeepCopyResources() []unstructured.Unstructured {
+	result := make([]unstructured.Unstructured, len(f.resources))
+	for i, spec := range f.resources {
+		result[i] = *spec.DeepCopy()
+	}
+	return result
 }
 
 func (f *YamlManifest) ResourceNames() []string {
@@ -125,14 +144,13 @@ func (f *YamlManifest) ResourceNames() []string {
 	return names
 }
 
-type YamlManifest struct {
-	dynamicClient dynamic.Interface
-	resources     []unstructured.Unstructured
-}
-
-type OperandOwner interface {
-	v1.Object
-	GroupVersionKind() schema.GroupVersionKind
+func (f *YamlManifest) resource(spec *unstructured.Unstructured) (dynamic.ResourceInterface, error) {
+	groupVersion, err := schema.ParseGroupVersion(spec.GetAPIVersion())
+	if err != nil {
+		return nil, err
+	}
+	groupVersionResource := groupVersion.WithResource(pluralize(spec.GetKind()))
+	return f.dynamicClient.Resource(groupVersionResource).Namespace(spec.GetNamespace()), nil
 }
 
 func parse(pathname string) []unstructured.Unstructured {
@@ -141,12 +159,6 @@ func parse(pathname string) []unstructured.Unstructured {
 	go decode(in, out)
 	result := []unstructured.Unstructured{}
 	for spec := range out {
-		if *olm && isManagedByOLM(spec.GetKind()) {
-			continue
-		}
-		if *denamespace && strings.ToLower(spec.GetKind()) == "namespace" {
-			continue
-		}
 		result = append(result, spec)
 	}
 	return result
@@ -235,55 +247,4 @@ func pluralize(kind string) string {
 	default:
 		return fmt.Sprintf("%ss", ret)
 	}
-}
-
-func client(spec unstructured.Unstructured, dc dynamic.Interface) (dynamic.ResourceInterface, error) {
-	groupVersion, err := schema.ParseGroupVersion(spec.GetAPIVersion())
-	if err != nil {
-		return nil, err
-	}
-	groupVersionResource := groupVersion.WithResource(pluralize(spec.GetKind()))
-	if ns := spec.GetNamespace(); ns == "" {
-		return dc.Resource(groupVersionResource), nil
-	} else {
-		return dc.Resource(groupVersionResource).Namespace(ns), nil
-	}
-}
-
-func isClusterScoped(kind string) bool {
-	// TODO: something more clever using !APIResource.Namespaced maybe?
-	switch strings.ToLower(kind) {
-	case "componentstatus",
-		"namespace",
-		"node",
-		"persistentvolume",
-		"mutatingwebhookconfiguration",
-		"validatingwebhookconfiguration",
-		"customresourcedefinition",
-		"apiservice",
-		"meshpolicy",
-		"tokenreview",
-		"selfsubjectaccessreview",
-		"selfsubjectrulesreview",
-		"subjectaccessreview",
-		"certificatesigningrequest",
-		"podsecuritypolicy",
-		"clusterrolebinding",
-		"clusterrole",
-		"priorityclass",
-		"storageclass",
-		"volumeattachment":
-		return true
-	}
-	return false
-}
-
-func isManagedByOLM(kind string) bool {
-	switch strings.ToLower(kind) {
-	case "namespace", "role", "rolebinding",
-		"clusterrole", "clusterrolebinding",
-		"customresourcedefinition", "serviceaccount":
-		return true
-	}
-	return false
 }
