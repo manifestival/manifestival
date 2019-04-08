@@ -54,7 +54,7 @@ func (f *YamlManifest) ApplyAll() error {
 }
 
 func (f *YamlManifest) Apply(spec *unstructured.Unstructured) error {
-	resource, err := f.resource(spec)
+	resource, err := f.ResourceInterface(spec)
 	if err != nil {
 		return err
 	}
@@ -109,7 +109,7 @@ func (f *YamlManifest) DeleteAll() error {
 }
 
 func (f *YamlManifest) Delete(spec *unstructured.Unstructured) error {
-	resource, err := f.resource(spec)
+	resource, err := f.ResourceInterface(spec)
 	if err != nil {
 		return err
 	}
@@ -139,12 +139,12 @@ func (f *YamlManifest) DeepCopyResources() []unstructured.Unstructured {
 func (f *YamlManifest) ResourceNames() []string {
 	var names []string
 	for _, spec := range f.resources {
-		names = append(names, fmt.Sprintf("%s (%s)", spec.GetName(), spec.GroupVersionKind()))
+		names = append(names, fmt.Sprintf("%s/%s (%s)", spec.GetNamespace(), spec.GetName(), spec.GroupVersionKind()))
 	}
 	return names
 }
 
-func (f *YamlManifest) resource(spec *unstructured.Unstructured) (dynamic.ResourceInterface, error) {
+func (f *YamlManifest) ResourceInterface(spec *unstructured.Unstructured) (dynamic.ResourceInterface, error) {
 	groupVersion, err := schema.ParseGroupVersion(spec.GetAPIVersion())
 	if err != nil {
 		return nil, err
