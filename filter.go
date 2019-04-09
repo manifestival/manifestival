@@ -1,4 +1,4 @@
-package yaml
+package manifestival
 
 import (
 	"strings"
@@ -15,7 +15,7 @@ type Owner interface {
 	schema.ObjectKind
 }
 
-func (f *YamlManifest) Filter(fns ...FilterFn) *YamlManifest {
+func (f *YamlManifest) Filter(fns ...FilterFn) Manifest {
 	var results []unstructured.Unstructured
 OUTER:
 	for i := 0; i < len(f.resources); i++ {
