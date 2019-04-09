@@ -2,7 +2,6 @@ package yaml
 
 import (
 	"bytes"
-	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -21,10 +20,6 @@ import (
 )
 
 var (
-	olm = flag.Bool("olm", false,
-		"Ignores resources managed by the Operator Lifecycle Manager")
-	Recursive = flag.Bool("recursive", false,
-		"If filename is a directory, process all manifests recursively")
 	log = logf.Log.WithName("manifests")
 )
 
@@ -33,17 +28,10 @@ type YamlManifest struct {
 	resources     []unstructured.Unstructured
 }
 
-func NewYamlManifest(pathname string, config *rest.Config, namespace string) *YamlManifest {
+func NewYamlManifest(pathname string, recursive bool, config *rest.Config) *YamlManifest {
 	client, _ := dynamic.NewForConfig(config)
 	log.Info("Reading YAML file", "name", pathname)
-	result := &YamlManifest{resources: parse(pathname), dynamicClient: client}
-	if *olm {
-		result.Filter(ByOLM)
-	}
-	if len(namespace) > 0 {
-		result.Filter(ByNamespace(namespace))
-	}
-	return result
+	return &YamlManifest{resources: parse(pathname, recursive), dynamicClient: client}
 }
 
 func (f *YamlManifest) ApplyAll() error {
@@ -166,9 +154,9 @@ func (f *YamlManifest) ResourceInterface(spec *unstructured.Unstructured) (dynam
 	return f.dynamicClient.Resource(groupVersionResource).Namespace(spec.GetNamespace()), nil
 }
 
-func parse(pathname string) []unstructured.Unstructured {
+func parse(pathname string, recursive bool) []unstructured.Unstructured {
 	in, out := make(chan []byte, 10), make(chan unstructured.Unstructured, 10)
-	go read(pathname, in)
+	go read(pathname, recursive, in)
 	go decode(in, out)
 	result := []unstructured.Unstructured{}
 	for spec := range out {
@@ -177,7 +165,7 @@ func parse(pathname string) []unstructured.Unstructured {
 	return result
 }
 
-func read(pathname string, sink chan []byte) {
+func read(pathname string, recursive bool, sink chan []byte) {
 	defer close(sink)
 	file, err := os.Stat(pathname)
 	if err != nil {
@@ -185,13 +173,13 @@ func read(pathname string, sink chan []byte) {
 		return
 	}
 	if file.IsDir() {
-		readDir(pathname, sink)
+		readDir(pathname, recursive, sink)
 	} else {
 		readFile(pathname, sink)
 	}
 }
 
-func readDir(pathname string, sink chan []byte) {
+func readDir(pathname string, recursive bool, sink chan []byte) {
 	list, err := ioutil.ReadDir(pathname)
 	if err != nil {
 		log.Error(err, "Unable to read directory")
@@ -200,8 +188,8 @@ func readDir(pathname string, sink chan []byte) {
 	for _, f := range list {
 		name := path.Join(pathname, f.Name())
 		switch {
-		case f.IsDir() && *Recursive:
-			readDir(name, sink)
+		case f.IsDir() && recursive:
+			readDir(name, recursive, sink)
 		case !f.IsDir():
 			readFile(name, sink)
 		}

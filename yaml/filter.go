@@ -15,13 +15,17 @@ type Owner interface {
 	schema.ObjectKind
 }
 
-func (f *YamlManifest) Filter(fn FilterFn) *YamlManifest {
+func (f *YamlManifest) Filter(fns ...FilterFn) *YamlManifest {
 	var results []unstructured.Unstructured
+OUTER:
 	for i := 0; i < len(f.resources); i++ {
 		spec := f.resources[i].DeepCopy()
-		if fn(spec) {
-			results = append(results, *spec)
+		for _, f := range fns {
+			if !f(spec) {
+				continue OUTER
+			}
 		}
+		results = append(results, *spec)
 	}
 	f.resources = results
 	return f

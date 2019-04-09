@@ -25,8 +25,7 @@ var parsetests = []ParseTest{
 
 func TestParsing(t *testing.T) {
 	for _, fixture := range parsetests {
-		*yaml.Recursive = fixture.recursive
-		f := yaml.NewYamlManifest(fixture.path, &rest.Config{}, "")
+		f := yaml.NewYamlManifest(fixture.path, fixture.recursive, &rest.Config{})
 		actual := f.DeepCopyResources()
 		for i, spec := range actual {
 			if spec.GetName() != fixture.resources[i] {
@@ -37,15 +36,14 @@ func TestParsing(t *testing.T) {
 }
 
 func TestMissingFile(t *testing.T) {
-	f := yaml.NewYamlManifest("testdata/missing", &rest.Config{}, "")
+	f := yaml.NewYamlManifest("testdata/missing", false, &rest.Config{})
 	if len(f.ResourceNames()) > 0 {
 		t.Error("Failed to handle missing file")
 	}
 }
 
 func TestFilter(t *testing.T) {
-	*yaml.Recursive = true
-	f := yaml.NewYamlManifest("testdata/", &rest.Config{}, "")
+	f := yaml.NewYamlManifest("testdata/", true, &rest.Config{})
 	actual := f.DeepCopyResources()
 	if len(actual) != 5 {
 		t.Errorf("Failed to read all resources: %s", actual)
@@ -72,14 +70,35 @@ func TestFilter(t *testing.T) {
 	}
 }
 
+func TestFilterCombo(t *testing.T) {
+	f := yaml.NewYamlManifest("testdata/", true, &rest.Config{})
+	actual := f.DeepCopyResources()
+	if len(actual) != 5 {
+		t.Errorf("Failed to read all resources: %s", actual)
+	}
+	fn1 := func(u *unstructured.Unstructured) bool {
+		return u.GetKind() == "B"
+	}
+	fn2 := func(u *unstructured.Unstructured) bool {
+		return u.GetName() == "bar"
+	}
+	x := f.Filter(fn1, fn2).DeepCopyResources()
+	if len(x) != 1 || x[0].GetName() != "bar" || x[0].GetKind() != "B" {
+		t.Errorf("Failed to filter by combo: %s", x)
+	}
+}
+
 func TestFinding(t *testing.T) {
-	*yaml.Recursive = true
-	f := yaml.NewYamlManifest("testdata/", &rest.Config{}, "fubar")
+	f := yaml.NewYamlManifest("testdata/", true, &rest.Config{})
+	f.Filter(yaml.ByNamespace("fubar"))
 	actual := f.Find("v1", "A", "foo")
 	if actual == nil {
 		t.Error("Failed to find resource")
 	}
 	if actual.GetNamespace() != "fubar" {
 		t.Errorf("Resource has wrong namespace: %s", actual)
+	}
+	if f.Find("NO", "NO", "NO") != nil {
+		t.Error("Missing resource found")
 	}
 }
