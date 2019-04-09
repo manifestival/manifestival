@@ -33,15 +33,17 @@ type YamlManifest struct {
 	resources     []unstructured.Unstructured
 }
 
-func NewYamlManifest(pathname string, config *rest.Config) *YamlManifest {
+func NewYamlManifest(pathname string, config *rest.Config, namespace string) *YamlManifest {
 	client, _ := dynamic.NewForConfig(config)
 	log.Info("Reading YAML file", "name", pathname)
 	result := &YamlManifest{resources: parse(pathname), dynamicClient: client}
 	if *olm {
-		return result.Filter(ByOLM)
-	} else {
-		return result
+		result.Filter(ByOLM)
 	}
+	if len(namespace) > 0 {
+		result.Filter(ByNamespace(namespace))
+	}
+	return result
 }
 
 func (f *YamlManifest) ApplyAll() error {
@@ -123,6 +125,17 @@ func (f *YamlManifest) Delete(spec *unstructured.Unstructured) error {
 		// ignore GC race conditions triggered by owner references
 		if !errors.IsNotFound(err) {
 			return err
+		}
+	}
+	return nil
+}
+
+func (f *YamlManifest) Find(apiVersion string, kind string, name string) *unstructured.Unstructured {
+	for _, spec := range f.resources {
+		if spec.GetAPIVersion() == apiVersion &&
+			spec.GetKind() == kind &&
+			spec.GetName() == name {
+			return spec.DeepCopy()
 		}
 	}
 	return nil

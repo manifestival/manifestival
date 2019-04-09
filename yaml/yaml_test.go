@@ -26,7 +26,7 @@ var parsetests = []ParseTest{
 func TestParsing(t *testing.T) {
 	for _, fixture := range parsetests {
 		*yaml.Recursive = fixture.recursive
-		f := yaml.NewYamlManifest(fixture.path, &rest.Config{})
+		f := yaml.NewYamlManifest(fixture.path, &rest.Config{}, "")
 		actual := f.DeepCopyResources()
 		for i, spec := range actual {
 			if spec.GetName() != fixture.resources[i] {
@@ -37,7 +37,7 @@ func TestParsing(t *testing.T) {
 }
 
 func TestMissingFile(t *testing.T) {
-	f := yaml.NewYamlManifest("testdata/missing", &rest.Config{})
+	f := yaml.NewYamlManifest("testdata/missing", &rest.Config{}, "")
 	if len(f.ResourceNames()) > 0 {
 		t.Error("Failed to handle missing file")
 	}
@@ -45,7 +45,7 @@ func TestMissingFile(t *testing.T) {
 
 func TestFilter(t *testing.T) {
 	*yaml.Recursive = true
-	f := yaml.NewYamlManifest("testdata/", &rest.Config{})
+	f := yaml.NewYamlManifest("testdata/", &rest.Config{}, "")
 	actual := f.DeepCopyResources()
 	if len(actual) != 5 {
 		t.Errorf("Failed to read all resources: %s", actual)
@@ -69,5 +69,17 @@ func TestFilter(t *testing.T) {
 		if spec.GetResourceVersion() != "" {
 			t.Errorf("The filter shouldn't affect previous resources: %s", actual)
 		}
+	}
+}
+
+func TestFinding(t *testing.T) {
+	*yaml.Recursive = true
+	f := yaml.NewYamlManifest("testdata/", &rest.Config{}, "fubar")
+	actual := f.Find("v1", "A", "foo")
+	if actual == nil {
+		t.Error("Failed to find resource")
+	}
+	if actual.GetNamespace() != "fubar" {
+		t.Errorf("Resource has wrong namespace: %s", actual)
 	}
 }
