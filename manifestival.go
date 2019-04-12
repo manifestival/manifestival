@@ -1,15 +1,12 @@
 package manifestival
 
 import (
+	"context"
 	"fmt"
-	"strings"
 
 	"k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
@@ -18,28 +15,34 @@ var (
 )
 
 type Manifest interface {
+	// Either updates or creates all resources in the manifest
 	ApplyAll() error
+	// Updates or creates a particular resource
 	Apply(*unstructured.Unstructured) error
+	// Deletes all resources in the manifest
 	DeleteAll() error
+	// Deletes a particular resource
 	Delete(spec *unstructured.Unstructured) error
+	// Retains every resource for which all FilterFn's return true
 	Filter(fns ...FilterFn) Manifest
+	// Returns a deep copy of the matching resource
 	Find(apiVersion string, kind string, name string) *unstructured.Unstructured
+	// Returns a deep copy of all resources in the manifest
 	DeepCopyResources() []unstructured.Unstructured
+	// Convenient list of all the resource names in the manifest
 	ResourceNames() []string
-	ResourceInterface(spec *unstructured.Unstructured) (dynamic.ResourceInterface, error)
 }
 
 type YamlManifest struct {
-	dynamicClient dynamic.Interface
-	resources     []unstructured.Unstructured
+	client    client.Client
+	resources []unstructured.Unstructured
 }
 
 var _ Manifest = &YamlManifest{}
 
-func NewYamlManifest(pathname string, recursive bool, config *rest.Config) Manifest {
-	client, _ := dynamic.NewForConfig(config)
+func NewYamlManifest(pathname string, recursive bool, client client.Client) Manifest {
 	log.Info("Reading YAML file", "name", pathname)
-	return &YamlManifest{resources: Parse(pathname, recursive), dynamicClient: client}
+	return &YamlManifest{resources: Parse(pathname, recursive), client: client}
 }
 
 func (f *YamlManifest) ApplyAll() error {
@@ -52,18 +55,17 @@ func (f *YamlManifest) ApplyAll() error {
 }
 
 func (f *YamlManifest) Apply(spec *unstructured.Unstructured) error {
-	resource, err := f.ResourceInterface(spec)
-	if err != nil {
-		return err
-	}
-	current, err := resource.Get(spec.GetName(), v1.GetOptions{})
+	key := client.ObjectKey{Namespace: spec.GetNamespace(), Name: spec.GetName()}
+	current := &unstructured.Unstructured{}
+	current.SetGroupVersionKind(spec.GroupVersionKind())
+	err := f.client.Get(context.TODO(), key, current)
 	if err != nil {
 		// Create new one
 		if !errors.IsNotFound(err) {
 			return err
 		}
 		log.Info("Creating", "type", spec.GroupVersionKind(), "name", spec.GetName())
-		if _, err = resource.Create(spec, v1.CreateOptions{}); err != nil {
+		if err = f.client.Create(context.TODO(), spec); err != nil {
 			return err
 		}
 	} else {
@@ -74,7 +76,7 @@ func (f *YamlManifest) Apply(spec *unstructured.Unstructured) error {
 		// only overwrite fields set in our resource
 		content := current.UnstructuredContent()
 		for k, v := range spec.UnstructuredContent() {
-			if k == "metadata" || k == "spec" {
+			if k == "metadata" || k == "spec" || k == "data" {
 				m := v.(map[string]interface{})
 				for kn, vn := range m {
 					unstructured.SetNestedField(content, vn, k, kn)
@@ -84,7 +86,7 @@ func (f *YamlManifest) Apply(spec *unstructured.Unstructured) error {
 			}
 		}
 		current.SetUnstructuredContent(content)
-		if _, err = resource.Update(current, v1.UpdateOptions{}); err != nil {
+		if err = f.client.Update(context.TODO(), current); err != nil {
 			return err
 		}
 	}
@@ -107,17 +109,16 @@ func (f *YamlManifest) DeleteAll() error {
 }
 
 func (f *YamlManifest) Delete(spec *unstructured.Unstructured) error {
-	resource, err := f.ResourceInterface(spec)
-	if err != nil {
-		return err
-	}
-	if _, err = resource.Get(spec.GetName(), v1.GetOptions{}); err != nil {
+	key := client.ObjectKey{Namespace: spec.GetNamespace(), Name: spec.GetName()}
+	current := &unstructured.Unstructured{}
+	current.SetGroupVersionKind(spec.GroupVersionKind())
+	if err := f.client.Get(context.TODO(), key, current); err != nil {
 		if errors.IsNotFound(err) {
 			return nil
 		}
 	}
 	log.Info("Deleting", "type", spec.GroupVersionKind(), "name", spec.GetName())
-	if err = resource.Delete(spec.GetName(), &v1.DeleteOptions{}); err != nil {
+	if err := f.client.Delete(context.TODO(), spec); err != nil {
 		// ignore GC race conditions triggered by owner references
 		if !errors.IsNotFound(err) {
 			return err
@@ -151,25 +152,4 @@ func (f *YamlManifest) ResourceNames() []string {
 		names = append(names, fmt.Sprintf("%s/%s (%s)", spec.GetNamespace(), spec.GetName(), spec.GroupVersionKind()))
 	}
 	return names
-}
-
-func (f *YamlManifest) ResourceInterface(spec *unstructured.Unstructured) (dynamic.ResourceInterface, error) {
-	groupVersion, err := schema.ParseGroupVersion(spec.GetAPIVersion())
-	if err != nil {
-		return nil, err
-	}
-	groupVersionResource := groupVersion.WithResource(pluralize(spec.GetKind()))
-	return f.dynamicClient.Resource(groupVersionResource).Namespace(spec.GetNamespace()), nil
-}
-
-func pluralize(kind string) string {
-	ret := strings.ToLower(kind)
-	switch {
-	case strings.HasSuffix(ret, "s"):
-		return fmt.Sprintf("%ses", ret)
-	case strings.HasSuffix(ret, "policy"):
-		return fmt.Sprintf("%sies", ret[:len(ret)-1])
-	default:
-		return fmt.Sprintf("%ss", ret)
-	}
 }
