@@ -5,11 +5,10 @@ import (
 
 	. "github.com/jcrossley3/manifestival"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/client-go/rest"
 )
 
 func TestFilter(t *testing.T) {
-	f := NewYamlManifest("testdata/", true, &rest.Config{})
+	f := NewYamlManifest("testdata/", true, nil)
 	actual := f.DeepCopyResources()
 	if len(actual) != 5 {
 		t.Errorf("Failed to read all resources: %s", actual)
@@ -37,7 +36,7 @@ func TestFilter(t *testing.T) {
 }
 
 func TestFilterCombo(t *testing.T) {
-	f := NewYamlManifest("testdata/", true, &rest.Config{})
+	f := NewYamlManifest("testdata/", true, nil)
 	actual := f.DeepCopyResources()
 	if len(actual) != 5 {
 		t.Errorf("Failed to read all resources: %s", actual)

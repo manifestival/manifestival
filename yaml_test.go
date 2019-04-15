@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	. "github.com/jcrossley3/manifestival"
-	"k8s.io/client-go/rest"
 )
 
 type ParseTest struct {
@@ -41,7 +40,7 @@ func TestMissingFile(t *testing.T) {
 }
 
 func TestFinding(t *testing.T) {
-	f := NewYamlManifest("testdata/", true, &rest.Config{})
+	f := NewYamlManifest("testdata/", true, nil)
 	f.Filter(ByNamespace("fubar"))
 	actual := f.Find("v1", "A", "foo")
 	if actual == nil {
