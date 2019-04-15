@@ -40,9 +40,13 @@ type YamlManifest struct {
 
 var _ Manifest = &YamlManifest{}
 
-func NewYamlManifest(pathname string, recursive bool, client client.Client) Manifest {
+func NewYamlManifest(pathname string, recursive bool, client client.Client) (Manifest, error) {
 	log.Info("Reading YAML file", "name", pathname)
-	return &YamlManifest{resources: Parse(pathname, recursive), client: client}
+	resources, err := Parse(pathname, recursive)
+	if err != nil {
+		return nil, err
+	}
+	return &YamlManifest{resources: resources, client: client}, nil
 }
 
 func (f *YamlManifest) ApplyAll() error {

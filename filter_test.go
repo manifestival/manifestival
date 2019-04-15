@@ -8,7 +8,11 @@ import (
 )
 
 func TestFilter(t *testing.T) {
-	f := NewYamlManifest("testdata/", true, nil)
+	f, err := NewYamlManifest("testdata/", true, nil)
+	if err != nil {
+		t.Errorf("NewYamlManifest() = %v, wanted no error", err)
+	}
+
 	actual := f.DeepCopyResources()
 	if len(actual) != 5 {
 		t.Errorf("Failed to read all resources: %s", actual)
@@ -36,7 +40,11 @@ func TestFilter(t *testing.T) {
 }
 
 func TestFilterCombo(t *testing.T) {
-	f := NewYamlManifest("testdata/", true, nil)
+	f, err := NewYamlManifest("testdata/", true, nil)
+	if err != nil {
+		t.Errorf("NewYamlManifest() = %v, wanted no error", err)
+	}
+
 	actual := f.DeepCopyResources()
 	if len(actual) != 5 {
 		t.Errorf("Failed to read all resources: %s", actual)
