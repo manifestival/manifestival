@@ -19,6 +19,7 @@ var parsetests = []ParseTest{
 	{"testdata/dir", false, []string{"foo", "bar", "baz"}},
 	{"testdata/dir/a.yaml", false, []string{"foo"}},
 	{"testdata/dir/b.yaml", false, []string{"bar", "baz"}},
+	{"https://raw.githubusercontent.com/jcrossley3/manifestival/master/testdata/file.yaml", true, []string{"a", "b"}},
 }
 
 func TestParsing(t *testing.T) {
