@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"io"
 	"io/ioutil"
+	"net/http"
+	"net/url"
 	"os"
 	"path"
 
@@ -24,15 +26,20 @@ func Parse(pathname string, recursive bool) []unstructured.Unstructured {
 
 func read(pathname string, recursive bool, sink chan []byte) {
 	defer close(sink)
-	file, err := os.Stat(pathname)
-	if err != nil {
-		log.Error(err, "Unable to get file info")
-		return
-	}
-	if file.IsDir() {
-		readDir(pathname, recursive, sink)
+
+	if isURL(pathname) {
+		readFileFromURL(pathname, sink)
 	} else {
-		readFile(pathname, sink)
+		file, err := os.Stat(pathname)
+		if err != nil {
+			log.Error(err, "Unable to get file info")
+			return
+		}
+		if file.IsDir() {
+			readDir(pathname, recursive, sink)
+		} else {
+			readFile(pathname, sink)
+		}
 	}
 }
 
@@ -58,9 +65,27 @@ func readFile(filename string, sink chan []byte) {
 	if err != nil {
 		panic(err.Error())
 	}
+	defer file.Close()
+
+	buf := buffer(file)
+	readYaml(file, sink, buf)
+}
+
+func readFileFromURL(pathname string, sink chan []byte) {
+	resp, err := http.Get(pathname)
+	if err != nil {
+		log.Error(err, "Unable to read file from remote URL")
+		panic(err.Error())
+	}
+	defer resp.Body.Close()
+
+	buf := bufferResponse(resp)
+	readYaml(resp.Body, sink, buf)
+}
+
+func readYaml(file io.ReadCloser, sink chan []byte, buf []byte) {
 	manifests := yaml.NewDocumentDecoder(file)
 	defer manifests.Close()
-	buf := buffer(file)
 	for {
 		size, err := manifests.Read(buf)
 		if err == io.EOF {
@@ -93,4 +118,17 @@ func buffer(file *os.File) []byte {
 		size = fi.Size()
 	}
 	return make([]byte, size)
+}
+
+func bufferResponse(resp *http.Response) []byte {
+	var size int64 = bytes.MinRead
+	if resp.ContentLength != -1 {
+		size = resp.ContentLength
+	}
+	return make([]byte, size)
+}
+
+func isURL(pathname string) bool {
+	_, err := url.ParseRequestURI(pathname)
+	return err == nil
 }
