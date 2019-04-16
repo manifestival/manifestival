@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -14,14 +15,33 @@ import (
 
 // Parse parses YAML files into Unstructured objects.
 //
-// It supports 4 cases today:
+// It supports 5 cases today:
 // 1. pathname = path to a file --> parses that file.
 // 2. pathname = path to a directory, recursive = false --> parses all files in
 //    that directory.
 // 3. pathname = path to a directory, recursive = true --> parses all files in
 //    that directory and it's descendants
 // 4. pathname = url --> fetches the contents of that URL and parses them as YAML.
+// 5. pathname = combination of all previous cases, the string can contain
+//    multiple records (file, directory or url) separated by comma
 func Parse(pathname string, recursive bool) ([]unstructured.Unstructured, error) {
+
+	pathnames := strings.Split(pathname, ",")
+	aggregated := []unstructured.Unstructured{}
+	for _, pth := range pathnames {
+		els, err := read(pth, recursive)
+		if err != nil {
+			return nil, err
+		}
+
+		aggregated = append(aggregated, els...)
+	}
+	return aggregated, nil
+}
+
+// read cotains a logic to distinguish the type of record in pathname
+// (file, directory or url) and calls the appropriate function
+func read(pathname string, recursive bool) ([]unstructured.Unstructured, error) {
 	if isURL(pathname) {
 		return readURL(pathname)
 	}
