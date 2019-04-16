@@ -2,10 +2,11 @@ package manifestival
 
 import (
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
+	"path"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -22,66 +23,72 @@ import (
 // 4. pathname = url --> fetches the contents of that URL and parses them as YAML.
 func Parse(pathname string, recursive bool) ([]unstructured.Unstructured, error) {
 	if isURL(pathname) {
-		return parseURL(pathname)
+		return readURL(pathname)
 	}
 
-	return parseTree(pathname, recursive)
+	info, err := os.Stat(pathname)
+	if err != nil {
+		return nil, err
+	}
+
+	if info.IsDir() {
+		return readDir(pathname, recursive)
+	}
+	return readFile(pathname)
 }
 
-// parseFile parses a single file.
-func parseFile(pathname string) ([]unstructured.Unstructured, error) {
+// readFile parses a single file.
+func readFile(pathname string) ([]unstructured.Unstructured, error) {
 	file, err := os.Open(pathname)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 
-	return parse(file)
+	return decode(file)
 }
 
-// parseTree parses a whole tree of files. Descendant directories will be ignored
-// if the recursive flag is set to false.
-func parseTree(root string, recursive bool) ([]unstructured.Unstructured, error) {
-	aggregated := []unstructured.Unstructured{}
-	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if info.IsDir() {
-			// Skip directories if no recursive behavior is wanted.
-			if path != root && !recursive {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-
-		els, err := parseFile(path)
-		if err != nil {
-			return err
-		}
-		aggregated = append(aggregated, els...)
-		return nil
-	})
+// readDir parses all files in a single directory and it's descendant directories
+// if the recursive flag is set to true.
+func readDir(pathname string, recursive bool) ([]unstructured.Unstructured, error) {
+	list, err := ioutil.ReadDir(pathname)
 	if err != nil {
 		return nil, err
+	}
+
+	aggregated := []unstructured.Unstructured{}
+	for _, f := range list {
+		name := path.Join(pathname, f.Name())
+		var els []unstructured.Unstructured
+
+		switch {
+		case f.IsDir() && recursive:
+			els, err = readDir(name, recursive)
+		case !f.IsDir():
+			els, err = readFile(name)
+		}
+
+		if err != nil {
+			return nil, err
+		}
+		aggregated = append(aggregated, els...)
 	}
 	return aggregated, nil
 }
 
-// parseURL fetches a URL and parses its contents as YAML.
-func parseURL(url string) ([]unstructured.Unstructured, error) {
+// readURL fetches a URL and parses its contents as YAML.
+func readURL(url string) ([]unstructured.Unstructured, error) {
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	return parse(resp.Body)
+	return decode(resp.Body)
 }
 
-// parse consumes the given reader and parses its contents as YAML.
-func parse(reader io.Reader) ([]unstructured.Unstructured, error) {
+// decode consumes the given reader and parses its contents as YAML.
+func decode(reader io.Reader) ([]unstructured.Unstructured, error) {
 	decoder := yaml.NewYAMLToJSONDecoder(reader)
 	objs := []unstructured.Unstructured{}
 	var err error
