@@ -6,51 +6,67 @@ import (
 	. "github.com/jcrossley3/manifestival"
 )
 
-type ParseTest struct {
-	path      string
-	recursive bool
-	resources []string
-}
-
-var parsetests = []ParseTest{
-	{"testdata/", false, []string{"a", "b"}},
-	{"testdata/", true, []string{"foo", "bar", "baz", "a", "b"}},
-	{"testdata/file.yaml", true, []string{"a", "b"}},
-	{"testdata/dir", false, []string{"foo", "bar", "baz"}},
-	{"testdata/dir/a.yaml", false, []string{"foo"}},
-	{"testdata/dir/b.yaml", false, []string{"bar", "baz"}},
-	{"https://raw.githubusercontent.com/jcrossley3/manifestival/master/testdata/file.yaml", true, []string{"a", "b"}},
-}
-
 func TestParsing(t *testing.T) {
-	for _, fixture := range parsetests {
-		actual := Parse(fixture.path, fixture.recursive)
-		for i, spec := range actual {
-			if spec.GetName() != fixture.resources[i] {
-				t.Errorf("Failed for '%s'; got '%s'; want '%s'", fixture.path, actual, fixture.resources)
+	tests := []struct {
+		name      string
+		path      string
+		recursive bool
+		want      []string
+		wantError bool
+	}{{
+		name: "single directory",
+		path: "testdata/",
+		want: []string{"a", "b"},
+	}, {
+		name:      "single directory, recursive",
+		path:      "testdata/",
+		recursive: true,
+		want:      []string{"foo", "bar", "baz", "a", "b"},
+	}, {
+		name:      "single file",
+		path:      "testdata/dir/b.yaml",
+		recursive: true,
+		want:      []string{"bar", "baz"},
+	}, {
+		name:      "single file, recursive",
+		path:      "testdata/file.yaml",
+		recursive: true,
+		want:      []string{"a", "b"},
+	}, {
+		name:      "missing file",
+		path:      "testdata/missing",
+		wantError: true,
+	}, {
+		name: "url",
+		path: "https://raw.githubusercontent.com/jcrossley3/manifestival/master/testdata/file.yaml",
+		want: []string{"a", "b"},
+	}, {
+		name:      "missing url",
+		path:      "http://thisurldoesntexistforsureimeanitreally.com/file.yaml",
+		wantError: true,
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			actual, err := Parse(test.path, test.recursive)
+
+			if err != nil && !test.wantError {
+				t.Errorf("Parse() = %v, wanted no error", err)
 			}
-		}
-	}
-}
 
-func TestMissingFile(t *testing.T) {
-	f := Parse("testdata/missing", false)
-	if len(f) > 0 {
-		t.Error("Failed to handle missing file")
-	}
-}
+			if err == nil && test.wantError {
+				t.Errorf("Expected an error from Parse()")
+			}
 
-func TestFinding(t *testing.T) {
-	f := NewYamlManifest("testdata/", true, nil)
-	f.Filter(ByNamespace("fubar"))
-	actual := f.Find("v1", "A", "foo")
-	if actual == nil {
-		t.Error("Failed to find resource")
-	}
-	if actual.GetNamespace() != "fubar" {
-		t.Errorf("Resource has wrong namespace: %s", actual)
-	}
-	if f.Find("NO", "NO", "NO") != nil {
-		t.Error("Missing resource found")
+			if len(actual) != len(test.want) {
+				t.Errorf("Parse() = %v, want: %v", actual, test.want)
+			}
+
+			for i, spec := range actual {
+				if spec.GetName() != test.want[i] {
+					t.Errorf("Failed for '%s'; got '%s'; want '%s'", test.path, actual, test.want)
+				}
+			}
+		})
 	}
 }
