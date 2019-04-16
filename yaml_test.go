@@ -44,6 +44,32 @@ func TestParsing(t *testing.T) {
 		name:      "missing url",
 		path:      "http://thisurldoesntexistforsureimeanitreally.com/file.yaml",
 		wantError: true,
+	}, {
+		name: "multiple urls",
+		path: "https://raw.githubusercontent.com/jcrossley3/manifestival/master/testdata/file.yaml,https://raw.githubusercontent.com/jcrossley3/manifestival/master/testdata/dir/a.yaml",
+		want: []string{"a", "b", "foo"},
+	}, {
+		name: "url and file",
+		path: "https://raw.githubusercontent.com/jcrossley3/manifestival/master/testdata/file.yaml,testdata/dir/a.yaml",
+		want: []string{"a", "b", "foo"},
+	}, {
+		name:      "url and directory, recursive",
+		path:      "https://raw.githubusercontent.com/jcrossley3/manifestival/master/testdata/file.yaml,testdata/dir",
+		recursive: true,
+		want:      []string{"a", "b", "foo", "bar", "baz"},
+	}, {
+		name:      "file and directory, recursive",
+		path:      "testdata/file.yaml,testdata/dir",
+		recursive: true,
+		want:      []string{"a", "b", "foo", "bar", "baz"},
+	}, {
+		name: "empty -> invalid input",
+		path: "",
+		wantError: true,
+	}, {
+		name: "url and empty path -> invalid input",
+		path: "https://raw.githubusercontent.com/jcrossley3/manifestival/master/testdata/file.yaml,",
+		wantError: true,
 	}}
 
 	for _, test := range tests {
