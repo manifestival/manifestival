@@ -55,6 +55,16 @@ func ByOwner(owner Owner) FilterFn {
 	}
 }
 
+func ByServiceAccount(sa string) FilterFn {
+	return func(u *unstructured.Unstructured) bool {
+		switch strings.ToLower(u.GetKind()) {
+		case "deployment", "statefulset":
+			unstructured.SetNestedField(u.Object, sa, "spec", "template", "spec", "serviceAccountName")
+		}
+		return true
+	}
+}
+
 func ByOLM(u *unstructured.Unstructured) bool {
 	switch strings.ToLower(u.GetKind()) {
 	case "namespace", "role", "rolebinding",
