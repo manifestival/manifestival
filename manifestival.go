@@ -168,6 +168,7 @@ func updateChanged(src, tgt interface{}) bool {
 		for k, v := range src {
 			if updateChanged(v, tgt[k]) {
 				if _, ok := v.(map[string]interface{}); !ok || tgt[k] == nil {
+					log.V(1).Info("Update required", k, v)
 					tgt[k] = v
 				}
 				changed = true
