@@ -25,8 +25,10 @@ type Manifest interface {
 	Delete(spec *unstructured.Unstructured) error
 	// Retains every resource for which all FilterFn's return true
 	Filter(fns ...FilterFn) Manifest
-	// Returns a deep copy of the matching resource
+	// Returns a deep copy of the matching resource read from the file
 	Find(apiVersion string, kind string, name string) *unstructured.Unstructured
+	// Returns the resource fetched from the api server, nil if not found
+	Get(spec *unstructured.Unstructured) (*unstructured.Unstructured, error)
 	// Returns a deep copy of all resources in the manifest
 	DeepCopyResources() []unstructured.Unstructured
 	// Convenient list of all the resource names in the manifest
@@ -59,39 +61,26 @@ func (f *YamlManifest) ApplyAll() error {
 }
 
 func (f *YamlManifest) Apply(spec *unstructured.Unstructured) error {
-	key := client.ObjectKey{Namespace: spec.GetNamespace(), Name: spec.GetName()}
-	current := &unstructured.Unstructured{}
-	current.SetGroupVersionKind(spec.GroupVersionKind())
-	err := f.client.Get(context.TODO(), key, current)
+	current, err := f.Get(spec)
 	if err != nil {
-		// Create new one
-		if !errors.IsNotFound(err) {
-			return err
-		}
+		return err
+	}
+	if current == nil {
 		log.Info("Creating", "type", spec.GroupVersionKind(), "name", spec.GetName())
 		if err = f.client.Create(context.TODO(), spec); err != nil {
 			return err
 		}
 	} else {
 		// Update existing one
-		log.Info("Updating", "type", spec.GroupVersionKind(), "name", spec.GetName())
+
 		// We need to preserve the current content, specifically
 		// 'metadata.resourceVersion' and 'spec.clusterIP', so we
 		// only overwrite fields set in our resource
-		content := current.UnstructuredContent()
-		for k, v := range spec.UnstructuredContent() {
-			if k == "metadata" || k == "spec" || k == "data" {
-				m := v.(map[string]interface{})
-				for kn, vn := range m {
-					unstructured.SetNestedField(content, vn, k, kn)
-				}
-			} else {
-				content[k] = v
+		if updateChanged(spec.UnstructuredContent(), current.UnstructuredContent()) {
+			log.Info("Updating", "type", spec.GroupVersionKind(), "name", spec.GetName())
+			if err = f.client.Update(context.TODO(), current); err != nil {
+				return err
 			}
-		}
-		current.SetUnstructuredContent(content)
-		if err = f.client.Update(context.TODO(), current); err != nil {
-			return err
 		}
 	}
 	return nil
@@ -113,13 +102,9 @@ func (f *YamlManifest) DeleteAll() error {
 }
 
 func (f *YamlManifest) Delete(spec *unstructured.Unstructured) error {
-	key := client.ObjectKey{Namespace: spec.GetNamespace(), Name: spec.GetName()}
-	current := &unstructured.Unstructured{}
-	current.SetGroupVersionKind(spec.GroupVersionKind())
-	if err := f.client.Get(context.TODO(), key, current); err != nil {
-		if errors.IsNotFound(err) {
-			return nil
-		}
+	current, err := f.Get(spec)
+	if current == nil && err == nil {
+		return nil
 	}
 	log.Info("Deleting", "type", spec.GroupVersionKind(), "name", spec.GetName())
 	if err := f.client.Delete(context.TODO(), spec); err != nil {
@@ -129,6 +114,20 @@ func (f *YamlManifest) Delete(spec *unstructured.Unstructured) error {
 		}
 	}
 	return nil
+}
+
+func (f *YamlManifest) Get(spec *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+	key := client.ObjectKey{Namespace: spec.GetNamespace(), Name: spec.GetName()}
+	result := &unstructured.Unstructured{}
+	result.SetGroupVersionKind(spec.GroupVersionKind())
+	err := f.client.Get(context.TODO(), key, result)
+	if err != nil {
+		result = nil
+		if errors.IsNotFound(err) {
+			err = nil
+		}
+	}
+	return result, err
 }
 
 func (f *YamlManifest) Find(apiVersion string, kind string, name string) *unstructured.Unstructured {
@@ -156,4 +155,41 @@ func (f *YamlManifest) ResourceNames() []string {
 		names = append(names, fmt.Sprintf("%s/%s (%s)", spec.GetNamespace(), spec.GetName(), spec.GroupVersionKind()))
 	}
 	return names
+}
+
+func updateChanged(src, tgt interface{}) bool {
+	changed := false
+	switch src := src.(type) {
+	case map[string]interface{}:
+		if tgt == nil {
+			tgt = make(map[string]interface{}, len(src))
+		}
+		tgt := tgt.(map[string]interface{})
+		for k, v := range src {
+			if updateChanged(v, tgt[k]) {
+				if _, ok := v.(map[string]interface{}); !ok || tgt[k] == nil {
+					tgt[k] = v
+				}
+				changed = true
+			}
+		}
+	case []interface{}:
+		if tgt == nil {
+			return true
+		}
+		tgt := tgt.([]interface{})
+		if len(src) != len(tgt) {
+			return true
+		}
+		for i, v := range src {
+			if updateChanged(v, tgt[i]) {
+				return true
+			}
+		}
+	default:
+		if src != tgt {
+			return true
+		}
+	}
+	return changed
 }
