@@ -72,10 +72,6 @@ func (f *YamlManifest) Apply(spec *unstructured.Unstructured) error {
 		}
 	} else {
 		// Update existing one
-
-		// We need to preserve the current content, specifically
-		// 'metadata.resourceVersion' and 'spec.clusterIP', so we
-		// only overwrite fields set in our resource
 		if updateChanged(spec.UnstructuredContent(), current.UnstructuredContent()) {
 			log.Info("Updating", "type", spec.GroupVersionKind(), "name", spec.GetName())
 			if err = f.client.Update(context.TODO(), current); err != nil {
@@ -157,43 +153,51 @@ func (f *YamlManifest) ResourceNames() []string {
 	return names
 }
 
-func updateChanged(src, tgt interface{}) bool {
+// We need to preserve the top-level target keys, specifically
+// 'metadata.resourceVersion' and 'spec.clusterIP', so we only
+// overwrite fields set in our src resource.
+func updateChanged(src, tgt map[string]interface{}) bool {
 	changed := false
-	switch src := src.(type) {
-	case map[string]interface{}:
-		if tgt == nil {
-			tgt = make(map[string]interface{}, len(src))
-		}
-		tgt := tgt.(map[string]interface{})
-		for k, v := range src {
-			if updateChanged(v, tgt[k]) {
-				if _, ok := v.(map[string]interface{}); !ok || tgt[k] == nil {
-					log.V(1).Info("Update required", k, v)
-					tgt[k] = v
-				}
+	for k, v := range src {
+		switch v := v.(type) {
+		case map[string]interface{}:
+			if tgt[k] == nil {
+				tgt[k], changed = v, true
+				continue
+			}
+			if updateChanged(v, tgt[k].(map[string]interface{})) {
+				// TODO: do we want to preserve target keys in nested
+				// maps, too? If not, change the following line to
+				//tgt[k], changed = v, true
 				changed = true
 			}
-		}
-	case []interface{}:
-		// TODO: this may not do what we expect for deeply nested
-		// slices of maps, but without some sort of "merge strategy",
-		// i'm not exactly sure what we expect anyway! This will
-		// completely overwrite the tgt slice with the source slice
-		if tgt == nil {
-			return true
-		}
-		tgt := tgt.([]interface{})
-		if len(src) != len(tgt) {
-			return true
-		}
-		for i, v := range src {
-			if updateChanged(v, tgt[i]) {
-				return true
+		case []interface{}:
+			// Any list that's not identical will be completely overwritten
+			if tgt[k] == nil {
+				tgt[k], changed = v, true
+				continue
 			}
-		}
-	default:
-		if src != tgt {
-			return true
+			s := tgt[k].([]interface{})
+			if len(v) != len(s) {
+				tgt[k], changed = v, true
+				continue
+			}
+			for i, j := range v {
+				if x, ok := j.(map[string]interface{}); ok {
+					if updateChanged(x, s[i].(map[string]interface{})) {
+						tgt[k], changed = v, true
+						break
+					}
+				} else if j != s[i] {
+					tgt[k], changed = v, true
+					break
+				}
+			}
+		default:
+			if v != tgt[k] {
+				log.V(1).Info("Update required", k, v)
+				tgt[k], changed = v, true
+			}
 		}
 	}
 	return changed

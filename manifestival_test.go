@@ -1,6 +1,7 @@
 package manifestival
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -195,6 +196,7 @@ func TestUpdateChanges(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			original := fmt.Sprintf("%+v", test.tgt)
 			actual := updateChanged(test.src, test.tgt)
 
 			if actual != test.changed {
@@ -202,7 +204,7 @@ func TestUpdateChanges(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(test.tgt, test.want) {
-				t.Errorf("Failed; got %+v; want %+v", test.tgt, test.want)
+				t.Errorf("from %+v to %s => %+v; wanted %+v", test.src, original, test.tgt, test.want)
 			}
 		})
 	}
