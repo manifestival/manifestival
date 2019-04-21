@@ -175,6 +175,10 @@ func updateChanged(src, tgt interface{}) bool {
 			}
 		}
 	case []interface{}:
+		// TODO: this may not do what we expect for deeply nested
+		// slices of maps, but without some sort of "merge strategy",
+		// i'm not exactly sure what we expect anyway! This will
+		// completely overwrite the tgt slice with the source slice
 		if tgt == nil {
 			return true
 		}

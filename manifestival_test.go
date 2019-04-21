@@ -119,7 +119,7 @@ func TestUpdateChanges(t *testing.T) {
 			},
 		},
 	}, {
-		name:    "change nested slice entry",
+		name:    "add nested slice entry",
 		changed: true,
 		src: map[string]interface{}{
 			"x": map[string]interface{}{
@@ -134,6 +134,24 @@ func TestUpdateChanges(t *testing.T) {
 		want: map[string]interface{}{
 			"x": map[string]interface{}{
 				"y": []interface{}{"1", "2"},
+			},
+		},
+	}, {
+		name:    "update nested slice entry",
+		changed: true,
+		src: map[string]interface{}{
+			"x": map[string]interface{}{
+				"y": []interface{}{"1", "2", "3"},
+			},
+		},
+		tgt: map[string]interface{}{
+			"x": map[string]interface{}{
+				"y": []interface{}{"3", "6", "9"},
+			},
+		},
+		want: map[string]interface{}{
+			"x": map[string]interface{}{
+				"y": []interface{}{"1", "2", "3"},
 			},
 		},
 	}, {
@@ -153,6 +171,24 @@ func TestUpdateChanges(t *testing.T) {
 			"x": map[string]interface{}{
 				"y": []interface{}{"1", "2"},
 				"x": 2,
+			},
+		},
+	}, {
+		name:    "change map within list",
+		changed: true,
+		src: map[string]interface{}{
+			"x": map[string]interface{}{
+				"y": []interface{}{map[string]interface{}{"foo": "bar"}},
+			},
+		},
+		tgt: map[string]interface{}{
+			"x": map[string]interface{}{
+				"y": []interface{}{map[string]interface{}{"foo": "baz", "one": 1}},
+			},
+		},
+		want: map[string]interface{}{
+			"x": map[string]interface{}{
+				"y": []interface{}{map[string]interface{}{"foo": "bar"}},
 			},
 		},
 	}}
