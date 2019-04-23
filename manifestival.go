@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -154,50 +155,24 @@ func (f *YamlManifest) ResourceNames() []string {
 }
 
 // We need to preserve the top-level target keys, specifically
-// 'metadata.resourceVersion' and 'spec.clusterIP', so we only
-// overwrite fields set in our src resource.
+// 'metadata.resourceVersion', 'spec.clusterIP', and any existing
+// entries in a ConfigMap's 'data' field. So we only overwrite fields
+// set in our src resource.
 func updateChanged(src, tgt map[string]interface{}) bool {
 	changed := false
 	for k, v := range src {
-		switch v := v.(type) {
-		case map[string]interface{}:
+		if v, ok := v.(map[string]interface{}); ok {
 			if tgt[k] == nil {
 				tgt[k], changed = v, true
-				continue
-			}
-			if updateChanged(v, tgt[k].(map[string]interface{})) {
-				// TODO: do we want to preserve target keys in nested
-				// maps, too? If not, change the following line to
-				//tgt[k], changed = v, true
+			} else if updateChanged(v, tgt[k].(map[string]interface{})) {
+				// This could be an issue if a field in a nested src
+				// map doesn't overwrite its corresponding tgt
 				changed = true
 			}
-		case []interface{}:
-			// Any list that's not identical will be completely overwritten
-			if tgt[k] == nil {
-				tgt[k], changed = v, true
-				continue
-			}
-			s := tgt[k].([]interface{})
-			if len(v) != len(s) {
-				tgt[k], changed = v, true
-				continue
-			}
-			for i, j := range v {
-				if x, ok := j.(map[string]interface{}); ok {
-					if updateChanged(x, s[i].(map[string]interface{})) {
-						tgt[k], changed = v, true
-						break
-					}
-				} else if j != s[i] {
-					tgt[k], changed = v, true
-					break
-				}
-			}
-		default:
-			if v != tgt[k] {
-				log.V(1).Info("Update required", k, v)
-				tgt[k], changed = v, true
-			}
+			continue
+		}
+		if !equality.Semantic.DeepEqual(v, tgt[k]) {
+			tgt[k], changed = v, true
 		}
 	}
 	return changed
