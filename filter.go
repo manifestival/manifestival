@@ -1,6 +1,7 @@
 package manifestival
 
 import (
+	"os"
 	"strings"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,13 +32,24 @@ OUTER:
 	return f
 }
 
+// We assume all resources in the manifest live in the same namespace
 func ByNamespace(ns string) FilterFn {
+	namespace := resolveEnv(ns)
 	return func(u *unstructured.Unstructured) bool {
-		if strings.ToLower(u.GetKind()) == "namespace" {
+		switch strings.ToLower(u.GetKind()) {
+		case "namespace":
 			return false
+		case "clusterrolebinding":
+			subjects, _, _ := unstructured.NestedFieldNoCopy(u.Object, "subjects")
+			for _, subject := range subjects.([]interface{}) {
+				m := subject.(map[string]interface{})
+				if _, ok := m["namespace"]; ok {
+					m["namespace"] = namespace
+				}
+			}
 		}
 		if !isClusterScoped(u.GetKind()) {
-			u.SetNamespace(ns)
+			u.SetNamespace(namespace)
 		}
 		return true
 	}
@@ -53,26 +65,6 @@ func ByOwner(owner Owner) FilterFn {
 		}
 		return true
 	}
-}
-
-func ByServiceAccount(sa string) FilterFn {
-	return func(u *unstructured.Unstructured) bool {
-		switch strings.ToLower(u.GetKind()) {
-		case "deployment", "statefulset":
-			unstructured.SetNestedField(u.Object, sa, "spec", "template", "spec", "serviceAccountName")
-		}
-		return true
-	}
-}
-
-func ByOLM(u *unstructured.Unstructured) bool {
-	switch strings.ToLower(u.GetKind()) {
-	case "namespace", "role", "rolebinding",
-		"clusterrole", "clusterrolebinding",
-		"customresourcedefinition", "serviceaccount":
-		return false
-	}
-	return true
 }
 
 func isClusterScoped(kind string) bool {
@@ -101,4 +93,11 @@ func isClusterScoped(kind string) bool {
 		return true
 	}
 	return false
+}
+
+func resolveEnv(x string) string {
+	if len(x) > 1 && x[:1] == "$" {
+		return os.Getenv(x[1:])
+	}
+	return x
 }
