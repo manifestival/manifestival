@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: Foo
-metadata:
-  name: a
----
-apiVersion: v1
-kind: Bar
-metadata:
-  name: b

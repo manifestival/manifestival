@@ -38,7 +38,7 @@ func TestParsing(t *testing.T) {
 		wantError: true,
 	}, {
 		name: "url",
-		path: "https://raw.githubusercontent.com/jcrossley3/manifestival/master/testdata/file.yaml",
+		path: "https://raw.githubusercontent.com/jcrossley3/manifestival/master/testdata/tree/file.yaml",
 		want: []string{"a", "b"},
 	}, {
 		name:      "missing url",
@@ -46,15 +46,15 @@ func TestParsing(t *testing.T) {
 		wantError: true,
 	}, {
 		name: "multiple urls",
-		path: "https://raw.githubusercontent.com/jcrossley3/manifestival/master/testdata/file.yaml,https://raw.githubusercontent.com/jcrossley3/manifestival/master/testdata/dir/a.yaml",
+		path: "https://raw.githubusercontent.com/jcrossley3/manifestival/master/testdata/tree/file.yaml,https://raw.githubusercontent.com/jcrossley3/manifestival/master/testdata/tree/dir/a.yaml",
 		want: []string{"a", "b", "foo"},
 	}, {
 		name: "url and file",
-		path: "https://raw.githubusercontent.com/jcrossley3/manifestival/master/testdata/file.yaml,testdata/tree/dir/a.yaml",
+		path: "https://raw.githubusercontent.com/jcrossley3/manifestival/master/testdata/tree/file.yaml,testdata/tree/dir/a.yaml",
 		want: []string{"a", "b", "foo"},
 	}, {
 		name:      "url and directory, recursive",
-		path:      "https://raw.githubusercontent.com/jcrossley3/manifestival/master/testdata/file.yaml,testdata/tree/dir",
+		path:      "https://raw.githubusercontent.com/jcrossley3/manifestival/master/testdata/tree/file.yaml,testdata/tree/dir",
 		recursive: true,
 		want:      []string{"a", "b", "foo", "bar", "baz"},
 	}, {
@@ -68,7 +68,7 @@ func TestParsing(t *testing.T) {
 		wantError: true,
 	}, {
 		name:      "url and empty path -> invalid input",
-		path:      "https://raw.githubusercontent.com/jcrossley3/manifestival/master/testdata/file.yaml,",
+		path:      "https://raw.githubusercontent.com/jcrossley3/manifestival/master/testdata/tree/file.yaml,",
 		wantError: true,
 	}}
 
