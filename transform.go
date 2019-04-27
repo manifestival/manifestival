@@ -9,20 +9,22 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-type FilterFn func(u *unstructured.Unstructured) bool
+// Transform one into another; return nil to reject/delete
+type Transformer func(u *unstructured.Unstructured) *unstructured.Unstructured
 
 type Owner interface {
 	v1.Object
 	schema.ObjectKind
 }
 
-func (f *YamlManifest) Filter(fns ...FilterFn) Manifest {
+func (f *YamlManifest) Transform(fns ...Transformer) Manifest {
 	var results []unstructured.Unstructured
 OUTER:
 	for i := 0; i < len(f.resources); i++ {
 		spec := f.resources[i].DeepCopy()
 		for _, f := range fns {
-			if !f(spec) {
+			spec = f(spec)
+			if spec == nil {
 				continue OUTER
 			}
 		}
@@ -33,12 +35,12 @@ OUTER:
 }
 
 // We assume all resources in the manifest live in the same namespace
-func ByNamespace(ns string) FilterFn {
+func InjectNamespace(ns string) Transformer {
 	namespace := resolveEnv(ns)
-	return func(u *unstructured.Unstructured) bool {
+	return func(u *unstructured.Unstructured) *unstructured.Unstructured {
 		switch strings.ToLower(u.GetKind()) {
 		case "namespace":
-			return false
+			return nil
 		case "clusterrolebinding":
 			subjects, _, _ := unstructured.NestedFieldNoCopy(u.Object, "subjects")
 			for _, subject := range subjects.([]interface{}) {
@@ -51,19 +53,19 @@ func ByNamespace(ns string) FilterFn {
 		if !isClusterScoped(u.GetKind()) {
 			u.SetNamespace(namespace)
 		}
-		return true
+		return u
 	}
 }
 
-func ByOwner(owner Owner) FilterFn {
-	return func(u *unstructured.Unstructured) bool {
+func InjectOwner(owner Owner) Transformer {
+	return func(u *unstructured.Unstructured) *unstructured.Unstructured {
 		if !isClusterScoped(u.GetKind()) {
 			// apparently reference counting for cluster-scoped
 			// resources is broken, so trust the GC only for ns-scoped
 			// dependents
 			u.SetOwnerReferences([]v1.OwnerReference{*v1.NewControllerRef(owner, owner.GroupVersionKind())})
 		}
-		return true
+		return u
 	}
 }
 
