@@ -17,11 +17,11 @@ type Owner interface {
 	schema.ObjectKind
 }
 
-func (f *YamlManifest) Transform(fns ...Transformer) Manifest {
+func (f *Manifest) Transform(fns ...Transformer) *Manifest {
 	var results []unstructured.Unstructured
 OUTER:
-	for i := 0; i < len(f.resources); i++ {
-		spec := f.resources[i].DeepCopy()
+	for i := 0; i < len(f.Resources); i++ {
+		spec := f.Resources[i].DeepCopy()
 		for _, f := range fns {
 			spec = f(spec)
 			if spec == nil {
@@ -30,7 +30,7 @@ OUTER:
 		}
 		results = append(results, *spec)
 	}
-	f.resources = results
+	f.Resources = results
 	return f
 }
 
