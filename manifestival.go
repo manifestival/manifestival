@@ -2,6 +2,7 @@ package manifestival
 
 import (
 	"context"
+	"fmt"
 
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -62,14 +63,14 @@ func (f *Manifest) Apply(spec *unstructured.Unstructured) error {
 		return err
 	}
 	if current == nil {
-		log.Info("Creating", "type", spec.GroupVersionKind(), "name", spec.GetName())
+		logResource("Creating", spec)
 		if err = f.client.Create(context.TODO(), spec); err != nil {
 			return err
 		}
 	} else {
 		// Update existing one
 		if UpdateChanged(spec.UnstructuredContent(), current.UnstructuredContent()) {
-			log.Info("Updating", "type", spec.GroupVersionKind(), "name", spec.GetName())
+			logResource("Updating", spec)
 			if err = f.client.Update(context.TODO(), current); err != nil {
 				return err
 			}
@@ -98,7 +99,7 @@ func (f *Manifest) Delete(spec *unstructured.Unstructured) error {
 	if current == nil && err == nil {
 		return nil
 	}
-	log.Info("Deleting", "type", spec.GroupVersionKind(), "name", spec.GetName())
+	logResource("Deleting", spec)
 	if err := f.client.Delete(context.TODO(), spec); err != nil {
 		// ignore GC race conditions triggered by owner references
 		if !errors.IsNotFound(err) {
@@ -155,4 +156,9 @@ func UpdateChanged(src, tgt map[string]interface{}) bool {
 		}
 	}
 	return changed
+}
+
+func logResource(msg string, spec *unstructured.Unstructured) {
+	name := fmt.Sprintf("%s/%s", spec.GetNamespace(), spec.GetName())
+	log.Info(msg, "name", name, "type", spec.GroupVersionKind())
 }
