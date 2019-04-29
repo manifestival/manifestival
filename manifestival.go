@@ -24,8 +24,8 @@ type Manifest interface {
 	DeleteAll() error
 	// Deletes a particular resource
 	Delete(spec *unstructured.Unstructured) error
-	// Retains every resource for which all FilterFn's return true
-	Filter(fns ...FilterFn) Manifest
+	// Transform the resources within a Manifest
+	Transform(fns ...Transformer) Manifest
 	// Returns a deep copy of the matching resource read from the file
 	Find(apiVersion string, kind string, name string) *unstructured.Unstructured
 	// Returns the resource fetched from the api server, nil if not found

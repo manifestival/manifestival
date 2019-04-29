@@ -12,7 +12,7 @@ func TestFinding(t *testing.T) {
 		t.Errorf("NewYamlManifest() = %v, wanted no error", err)
 	}
 
-	f.Filter(ByNamespace("fubar"))
+	f.Transform(InjectNamespace("fubar"))
 	actual := f.Find("v1", "A", "foo")
 	if actual == nil {
 		t.Error("Failed to find resource")
