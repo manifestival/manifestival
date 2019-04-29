@@ -9,12 +9,12 @@ import (
 )
 
 func TestTransform(t *testing.T) {
-	f, err := NewYamlManifest("testdata/tree", true, nil)
+	f, err := NewManifest("testdata/tree", true, nil)
 	if err != nil {
-		t.Errorf("NewYamlManifest() = %v, wanted no error", err)
+		t.Errorf("NewManifest() = %v, wanted no error", err)
 	}
 
-	actual := f.DeepCopyResources()
+	actual := f.Resources
 	if len(actual) != 5 {
 		t.Errorf("Failed to read all resources: %s", actual)
 	}
@@ -25,7 +25,7 @@ func TestTransform(t *testing.T) {
 		}
 		return nil
 	})
-	transformed := f.DeepCopyResources()
+	transformed := f.Resources
 	if len(transformed) != 2 {
 		t.Errorf("Failed to transform by kind: %s", transformed)
 	}
@@ -44,14 +44,12 @@ func TestTransform(t *testing.T) {
 }
 
 func TestTransformCombo(t *testing.T) {
-	f, err := NewYamlManifest("testdata/tree", true, nil)
+	f, err := NewManifest("testdata/tree", true, nil)
 	if err != nil {
-		t.Errorf("NewYamlManifest() = %v, wanted no error", err)
+		t.Errorf("NewManifest() = %v, wanted no error", err)
 	}
-
-	actual := f.DeepCopyResources()
-	if len(actual) != 5 {
-		t.Errorf("Failed to read all resources: %s", actual)
+	if len(f.Resources) != 5 {
+		t.Errorf("Failed to read all resources: %s", f.Resources)
 	}
 	fn1 := func(u *unstructured.Unstructured) *unstructured.Unstructured {
 		if u.GetKind() == "B" {
@@ -65,7 +63,7 @@ func TestTransformCombo(t *testing.T) {
 		}
 		return nil
 	}
-	x := f.Transform(fn1, fn2).DeepCopyResources()
+	x := f.Transform(fn1, fn2).Resources
 	if len(x) != 1 || x[0].GetName() != "bar" || x[0].GetKind() != "B" {
 		t.Errorf("Failed to transform by combo: %s", x)
 	}
@@ -79,18 +77,18 @@ func TestInjectNamespace(t *testing.T) {
 			t.Errorf("Expected '%s', got '%s'", expected, ns)
 		}
 	}
-	f, _ := NewYamlManifest("testdata/crb.yaml", true, nil)
-	resources := f.DeepCopyResources()
+	f, _ := NewManifest("testdata/crb.yaml", true, nil)
+	resources := f.Resources
 	if len(resources) != 2 {
 		t.Errorf("Expected 2 resources, got %d", len(resources))
 	}
-	x := f.Transform(InjectNamespace("foo")).DeepCopyResources()
-	resources = f.DeepCopyResources()
+	x := f.Transform(InjectNamespace("foo")).Resources
+	resources = f.Resources
 	if len(resources) != 1 {
 		t.Errorf("Expected 1 resource, got %d", len(resources))
 	}
 	assert(x[0], "foo")
 	os.Setenv("FOO", "foo")
-	x = f.Transform(InjectNamespace("$FOO")).DeepCopyResources()
+	x = f.Transform(InjectNamespace("$FOO")).Resources
 	assert(x[0], "foo")
 }

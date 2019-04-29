@@ -1,13 +1,15 @@
-package manifestival
+package manifestival_test
 
 import (
 	"fmt"
 	"reflect"
 	"testing"
+
+	. "github.com/jcrossley3/manifestival"
 )
 
 func TestFinding(t *testing.T) {
-	f, err := NewYamlManifest("testdata/", true, nil)
+	f, err := NewManifest("testdata/", true, nil)
 	if err != nil {
 		t.Errorf("NewYamlManifest() = %v, wanted no error", err)
 	}
@@ -197,7 +199,7 @@ func TestUpdateChanges(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			original := fmt.Sprintf("%+v", test.tgt)
-			actual := updateChanged(test.src, test.tgt)
+			actual := UpdateChanged(test.src, test.tgt)
 
 			if actual != test.changed {
 				t.Errorf("updateChanged() = %v, want: %v", actual, test.changed)

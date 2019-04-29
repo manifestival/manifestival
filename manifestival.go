@@ -15,7 +15,7 @@ var (
 	log = logf.Log.WithName("manifestival")
 )
 
-type Manifest interface {
+type Manifestival interface {
 	// Either updates or creates all resources in the manifest
 	ApplyAll() error
 	// Updates or creates a particular resource
@@ -24,36 +24,32 @@ type Manifest interface {
 	DeleteAll() error
 	// Deletes a particular resource
 	Delete(spec *unstructured.Unstructured) error
-	// Transform the resources within a Manifest
-	Transform(fns ...Transformer) Manifest
+	// Transforms the resources within a Manifest; returns itself
+	Transform(fns ...Transformer) *Manifest
 	// Returns a deep copy of the matching resource read from the file
 	Find(apiVersion string, kind string, name string) *unstructured.Unstructured
 	// Returns the resource fetched from the api server, nil if not found
 	Get(spec *unstructured.Unstructured) (*unstructured.Unstructured, error)
-	// Returns a deep copy of all resources in the manifest
-	DeepCopyResources() []unstructured.Unstructured
-	// Convenient list of all the resource names in the manifest
-	ResourceNames() []string
 }
 
-type YamlManifest struct {
+type Manifest struct {
+	Resources []unstructured.Unstructured
 	client    client.Client
-	resources []unstructured.Unstructured
 }
 
-var _ Manifest = &YamlManifest{}
+var _ Manifestival = &Manifest{}
 
-func NewYamlManifest(pathname string, recursive bool, client client.Client) (Manifest, error) {
-	log.Info("Reading YAML file", "name", pathname)
+func NewManifest(pathname string, recursive bool, client client.Client) (Manifest, error) {
+	log.Info("Reading file", "name", pathname)
 	resources, err := Parse(pathname, recursive)
 	if err != nil {
-		return nil, err
+		return Manifest{}, err
 	}
-	return &YamlManifest{resources: resources, client: client}, nil
+	return Manifest{Resources: resources, client: client}, nil
 }
 
-func (f *YamlManifest) ApplyAll() error {
-	for _, spec := range f.resources {
+func (f *Manifest) ApplyAll() error {
+	for _, spec := range f.Resources {
 		if err := f.Apply(&spec); err != nil {
 			return err
 		}
@@ -61,20 +57,20 @@ func (f *YamlManifest) ApplyAll() error {
 	return nil
 }
 
-func (f *YamlManifest) Apply(spec *unstructured.Unstructured) error {
+func (f *Manifest) Apply(spec *unstructured.Unstructured) error {
 	current, err := f.Get(spec)
 	if err != nil {
 		return err
 	}
 	if current == nil {
-		log.Info("Creating", "type", spec.GroupVersionKind(), "name", spec.GetName())
+		logResource("Creating", spec)
 		if err = f.client.Create(context.TODO(), spec); err != nil {
 			return err
 		}
 	} else {
 		// Update existing one
-		if updateChanged(spec.UnstructuredContent(), current.UnstructuredContent()) {
-			log.Info("Updating", "type", spec.GroupVersionKind(), "name", spec.GetName())
+		if UpdateChanged(spec.UnstructuredContent(), current.UnstructuredContent()) {
+			logResource("Updating", spec)
 			if err = f.client.Update(context.TODO(), current); err != nil {
 				return err
 			}
@@ -83,9 +79,9 @@ func (f *YamlManifest) Apply(spec *unstructured.Unstructured) error {
 	return nil
 }
 
-func (f *YamlManifest) DeleteAll() error {
-	a := make([]unstructured.Unstructured, len(f.resources))
-	copy(a, f.resources)
+func (f *Manifest) DeleteAll() error {
+	a := make([]unstructured.Unstructured, len(f.Resources))
+	copy(a, f.Resources)
 	// we want to delete in reverse order
 	for left, right := 0, len(a)-1; left < right; left, right = left+1, right-1 {
 		a[left], a[right] = a[right], a[left]
@@ -98,12 +94,12 @@ func (f *YamlManifest) DeleteAll() error {
 	return nil
 }
 
-func (f *YamlManifest) Delete(spec *unstructured.Unstructured) error {
+func (f *Manifest) Delete(spec *unstructured.Unstructured) error {
 	current, err := f.Get(spec)
 	if current == nil && err == nil {
 		return nil
 	}
-	log.Info("Deleting", "type", spec.GroupVersionKind(), "name", spec.GetName())
+	logResource("Deleting", spec)
 	if err := f.client.Delete(context.TODO(), spec); err != nil {
 		// ignore GC race conditions triggered by owner references
 		if !errors.IsNotFound(err) {
@@ -113,7 +109,7 @@ func (f *YamlManifest) Delete(spec *unstructured.Unstructured) error {
 	return nil
 }
 
-func (f *YamlManifest) Get(spec *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+func (f *Manifest) Get(spec *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 	key := client.ObjectKey{Namespace: spec.GetNamespace(), Name: spec.GetName()}
 	result := &unstructured.Unstructured{}
 	result.SetGroupVersionKind(spec.GroupVersionKind())
@@ -127,8 +123,8 @@ func (f *YamlManifest) Get(spec *unstructured.Unstructured) (*unstructured.Unstr
 	return result, err
 }
 
-func (f *YamlManifest) Find(apiVersion string, kind string, name string) *unstructured.Unstructured {
-	for _, spec := range f.resources {
+func (f *Manifest) Find(apiVersion string, kind string, name string) *unstructured.Unstructured {
+	for _, spec := range f.Resources {
 		if spec.GetAPIVersion() == apiVersion &&
 			spec.GetKind() == kind &&
 			spec.GetName() == name {
@@ -138,33 +134,17 @@ func (f *YamlManifest) Find(apiVersion string, kind string, name string) *unstru
 	return nil
 }
 
-func (f *YamlManifest) DeepCopyResources() []unstructured.Unstructured {
-	result := make([]unstructured.Unstructured, len(f.resources))
-	for i, spec := range f.resources {
-		result[i] = *spec.DeepCopy()
-	}
-	return result
-}
-
-func (f *YamlManifest) ResourceNames() []string {
-	var names []string
-	for _, spec := range f.resources {
-		names = append(names, fmt.Sprintf("%s/%s (%s)", spec.GetNamespace(), spec.GetName(), spec.GroupVersionKind()))
-	}
-	return names
-}
-
 // We need to preserve the top-level target keys, specifically
 // 'metadata.resourceVersion', 'spec.clusterIP', and any existing
 // entries in a ConfigMap's 'data' field. So we only overwrite fields
 // set in our src resource.
-func updateChanged(src, tgt map[string]interface{}) bool {
+func UpdateChanged(src, tgt map[string]interface{}) bool {
 	changed := false
 	for k, v := range src {
 		if v, ok := v.(map[string]interface{}); ok {
 			if tgt[k] == nil {
 				tgt[k], changed = v, true
-			} else if updateChanged(v, tgt[k].(map[string]interface{})) {
+			} else if UpdateChanged(v, tgt[k].(map[string]interface{})) {
 				// This could be an issue if a field in a nested src
 				// map doesn't overwrite its corresponding tgt
 				changed = true
@@ -176,4 +156,9 @@ func updateChanged(src, tgt map[string]interface{}) bool {
 		}
 	}
 	return changed
+}
+
+func logResource(msg string, spec *unstructured.Unstructured) {
+	name := fmt.Sprintf("%s/%s", spec.GetNamespace(), spec.GetName())
+	log.Info(msg, "name", name, "type", spec.GroupVersionKind())
 }
