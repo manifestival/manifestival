@@ -18,20 +18,16 @@ func TestTransform(t *testing.T) {
 	if len(actual) != 5 {
 		t.Errorf("Failed to read all resources: %s", actual)
 	}
-	f.Transform(func(u *unstructured.Unstructured) *unstructured.Unstructured {
-		u.SetResourceVersion("69")
+	f.Transform(func(u *unstructured.Unstructured) error {
 		if u.GetKind() == "B" {
-			return u
+			u.SetResourceVersion("69")
 		}
 		return nil
 	})
 	transformed := f.Resources
-	if len(transformed) != 2 {
-		t.Errorf("Failed to transform by kind: %s", transformed)
-	}
 	// Ensure all transformed have a version and B kind
 	for _, spec := range transformed {
-		if spec.GetResourceVersion() != "69" || spec.GetKind() != "B" {
+		if spec.GetResourceVersion() != "69" && spec.GetKind() == "B" {
 			t.Errorf("The transform didn't work: %s", transformed)
 		}
 	}
@@ -51,21 +47,28 @@ func TestTransformCombo(t *testing.T) {
 	if len(f.Resources) != 5 {
 		t.Errorf("Failed to read all resources: %s", f.Resources)
 	}
-	fn1 := func(u *unstructured.Unstructured) *unstructured.Unstructured {
+	fn1 := func(u *unstructured.Unstructured) error {
 		if u.GetKind() == "B" {
-			return u
+			u.SetResourceVersion("69")
 		}
 		return nil
 	}
-	fn2 := func(u *unstructured.Unstructured) *unstructured.Unstructured {
+	fn2 := func(u *unstructured.Unstructured) error {
 		if u.GetName() == "bar" {
-			return u
+			u.SetResourceVersion("42")
 		}
 		return nil
 	}
-	x := f.Transform(fn1, fn2).Resources
-	if len(x) != 1 || x[0].GetName() != "bar" || x[0].GetKind() != "B" {
-		t.Errorf("Failed to transform by combo: %s", x)
+	if err := f.Transform(fn1, fn2); err != nil {
+		t.Error(err)
+	}
+	for _, x := range f.Resources {
+		if x.GetName() == "bar" && x.GetResourceVersion() != "42" {
+			t.Errorf("Failed to transform bar by combo: %s", x)
+		}
+		if x.GetName() == "B" && x.GetResourceVersion() != "69" {
+			t.Errorf("Failed to transform B by combo: %s", x)
+		}
 	}
 }
 
@@ -78,17 +81,25 @@ func TestInjectNamespace(t *testing.T) {
 		}
 	}
 	f, _ := NewManifest("testdata/crb.yaml", true, nil)
-	resources := f.Resources
-	if len(resources) != 2 {
-		t.Errorf("Expected 2 resources, got %d", len(resources))
+	if len(f.Resources) != 2 {
+		t.Errorf("Expected 2 resources, got %d", len(f.Resources))
 	}
-	x := f.Transform(InjectNamespace("foo")).Resources
-	resources = f.Resources
-	if len(resources) != 1 {
-		t.Errorf("Expected 1 resource, got %d", len(resources))
+	if err := f.Transform(InjectNamespace("foo")); err != nil {
+		t.Error(err)
 	}
-	assert(x[0], "foo")
-	os.Setenv("FOO", "foo")
-	x = f.Transform(InjectNamespace("$FOO")).Resources
-	assert(x[0], "foo")
+	if len(f.Resources) != 2 {
+		t.Errorf("Expected 2 resource, got %d", len(f.Resources))
+	}
+	if f.Resources[0].GetName() != "foo" {
+		t.Errorf("Expected namespace name to be foo, got %s", f.Resources[0].GetName())
+	}
+	assert(f.Resources[1], "foo")
+	os.Setenv("FOO", "food")
+	if err := f.Transform(InjectNamespace("$FOO")); err != nil {
+		t.Error(err)
+	}
+	if f.Resources[0].GetName() != "food" {
+		t.Errorf("Expected namespace name to be food, got %s", f.Resources[0].GetName())
+	}
+	assert(f.Resources[1], "food")
 }

@@ -24,11 +24,11 @@ type Manifestival interface {
 	DeleteAll(opts ...client.DeleteOptionFunc) error
 	// Deletes a particular resource
 	Delete(spec *unstructured.Unstructured, opts ...client.DeleteOptionFunc) error
-	// Transforms the resources within a Manifest; returns itself
-	Transform(fns ...Transformer) *Manifest
+	// Transforms the resources within a Manifest
+	Transform(fns ...Transformer) error
 	// Returns a deep copy of the matching resource read from the file
 	Find(apiVersion string, kind string, name string) *unstructured.Unstructured
-	// Returns the resource fetched from the api server, nil if not found
+	// Returns a copy of the resource from the api server, nil if not found
 	Get(spec *unstructured.Unstructured) (*unstructured.Unstructured, error)
 }
 
@@ -138,6 +138,7 @@ func (f *Manifest) Find(apiVersion string, kind string, name string) *unstructur
 // 'metadata.resourceVersion', 'spec.clusterIP', and any existing
 // entries in a ConfigMap's 'data' field. So we only overwrite fields
 // set in our src resource.
+// TODO: Use Patch instead
 func UpdateChanged(src, tgt map[string]interface{}) bool {
 	changed := false
 	for k, v := range src {
