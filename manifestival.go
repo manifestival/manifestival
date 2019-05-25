@@ -24,12 +24,10 @@ type Manifestival interface {
 	DeleteAll(opts ...client.DeleteOptionFunc) error
 	// Deletes a particular resource
 	Delete(spec *unstructured.Unstructured, opts ...client.DeleteOptionFunc) error
-	// Transforms the resources within a Manifest
-	Transform(fns ...Transformer) error
-	// Returns a deep copy of the matching resource read from the file
-	Find(apiVersion string, kind string, name string) *unstructured.Unstructured
 	// Returns a copy of the resource from the api server, nil if not found
 	Get(spec *unstructured.Unstructured) (*unstructured.Unstructured, error)
+	// Transforms the resources within a Manifest
+	Transform(fns ...Transformer) error
 }
 
 type Manifest struct {
@@ -121,17 +119,6 @@ func (f *Manifest) Get(spec *unstructured.Unstructured) (*unstructured.Unstructu
 		}
 	}
 	return result, err
-}
-
-func (f *Manifest) Find(apiVersion string, kind string, name string) *unstructured.Unstructured {
-	for _, spec := range f.Resources {
-		if spec.GetAPIVersion() == apiVersion &&
-			spec.GetKind() == kind &&
-			spec.GetName() == name {
-			return spec.DeepCopy()
-		}
-	}
-	return nil
 }
 
 // We need to preserve the top-level target keys, specifically
