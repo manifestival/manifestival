@@ -62,6 +62,7 @@ func (f *Manifest) Apply(spec *unstructured.Unstructured) error {
 	}
 	if current == nil {
 		logResource("Creating", spec)
+		annotate(spec, "manifestival", resourceCreated)
 		if err = f.client.Create(context.TODO(), spec); err != nil {
 			return err
 		}
@@ -85,8 +86,10 @@ func (f *Manifest) DeleteAll(opts ...client.DeleteOptionFunc) error {
 		a[left], a[right] = a[right], a[left]
 	}
 	for _, spec := range a {
-		if err := f.Delete(&spec, opts...); err != nil {
-			return err
+		if okToDelete(&spec) {
+			if err := f.Delete(&spec, opts...); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -150,3 +153,24 @@ func logResource(msg string, spec *unstructured.Unstructured) {
 	name := fmt.Sprintf("%s/%s", spec.GetNamespace(), spec.GetName())
 	log.Info(msg, "name", name, "type", spec.GroupVersionKind())
 }
+
+func annotate(spec *unstructured.Unstructured, key string, value string) {
+	annotations := spec.GetAnnotations()
+	if annotations == nil {
+		annotations = make(map[string]string)
+	}
+	annotations[key] = value
+	spec.SetAnnotations(annotations)
+}
+
+func okToDelete(spec *unstructured.Unstructured) bool {
+	switch spec.GetKind() {
+	case "Namespace":
+		return spec.GetAnnotations()["manifestival"] == resourceCreated
+	}
+	return true
+}
+
+const (
+	resourceCreated = "new"
+)
