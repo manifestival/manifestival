@@ -1,6 +1,8 @@
 package manifestival_test
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	. "github.com/jcrossley3/manifestival"
@@ -36,6 +38,11 @@ func TestParsing(t *testing.T) {
 		name:      "missing file",
 		path:      "testdata/missing",
 		wantError: true,
+	}, {
+		name:      "absolute path",
+		path:      filepath.Join(os.Getenv("PWD"), "testdata/tree/dir/b.yaml"),
+		recursive: true,
+		want:      []string{"bar", "baz"},
 	}, {
 		name: "url",
 		path: "https://raw.githubusercontent.com/jcrossley3/manifestival/master/testdata/tree/file.yaml",
