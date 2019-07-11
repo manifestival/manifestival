@@ -1,13 +1,15 @@
 package manifestival
 
 import (
-	"context"
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/rest"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
@@ -24,9 +26,9 @@ type Manifestival interface {
 	// Updates or creates a particular resource
 	Apply(*unstructured.Unstructured) error
 	// Deletes all resources in the manifest
-	DeleteAll(opts ...client.DeleteOption) error
+	DeleteAll(opts *metav1.DeleteOptions) error
 	// Deletes a particular resource
-	Delete(spec *unstructured.Unstructured, opts ...client.DeleteOption) error
+	Delete(spec *unstructured.Unstructured, opts *metav1.DeleteOptions) error
 	// Returns a copy of the resource from the api server, nil if not found
 	Get(spec *unstructured.Unstructured) (*unstructured.Unstructured, error)
 	// Transforms the resources within a Manifest
@@ -37,22 +39,23 @@ type Manifestival interface {
 // group using a Kubernetes client provided by `NewManifest`.
 type Manifest struct {
 	Resources []unstructured.Unstructured
-	client    client.Client
+	client    dynamic.Interface
+	mapper    meta.RESTMapper
 }
 
 var _ Manifestival = &Manifest{}
 
-// NewManifest creates a Manifest from a comma-separated set of yaml files or
-// directories (and subdirectories if the `recursive` option is set). The
-// Manifest will be evaluated using the supplied `client` against a particular
-// Kubernetes apiserver.
-func NewManifest(pathname string, recursive bool, client client.Client) (Manifest, error) {
-	log.Info("Reading file", "name", pathname)
+func NewManifest(pathname string, recursive bool, config *rest.Config, mapper meta.RESTMapper) (Manifest, error) {
+	log.Info("Reading manifest", "name", pathname)
 	resources, err := Parse(pathname, recursive)
 	if err != nil {
 		return Manifest{}, err
 	}
-	return Manifest{Resources: resources, client: client}, nil
+	client, err := dynamic.NewForConfig(config)
+	if err != nil {
+		return Manifest{Resources: resources}, err
+	}
+	return Manifest{Resources: resources, client: client, mapper: mapper}, nil
 }
 
 // ApplyAll updates or creates all resources in the manifest.
@@ -72,17 +75,21 @@ func (f *Manifest) Apply(spec *unstructured.Unstructured) error {
 	if err != nil {
 		return err
 	}
+	resource, err := f.ResourceInterface(spec)
+	if err != nil {
+		return err
+	}
 	if current == nil {
 		logResource("Creating", spec)
 		annotate(spec, "manifestival", resourceCreated)
-		if err = f.client.Create(context.TODO(), spec.DeepCopy()); err != nil {
+		if _, err = resource.Create(spec.DeepCopy(), metav1.CreateOptions{}); err != nil {
 			return err
 		}
 	} else {
 		// Update existing one
 		if UpdateChanged(spec.UnstructuredContent(), current.UnstructuredContent()) {
 			logResource("Updating", spec)
-			if err = f.client.Update(context.TODO(), current); err != nil {
+			if _, err = resource.Update(current, metav1.UpdateOptions{}); err != nil {
 				return err
 			}
 		}
@@ -90,8 +97,7 @@ func (f *Manifest) Apply(spec *unstructured.Unstructured) error {
 	return nil
 }
 
-// DeleteAll removes all tracked `Resources` in the Manifest.
-func (f *Manifest) DeleteAll(opts ...client.DeleteOption) error {
+func (f *Manifest) DeleteAll(opts *metav1.DeleteOptions) error {
 	a := make([]unstructured.Unstructured, len(f.Resources))
 	copy(a, f.Resources)
 	// we want to delete in reverse order
@@ -100,7 +106,7 @@ func (f *Manifest) DeleteAll(opts ...client.DeleteOption) error {
 	}
 	for _, spec := range a {
 		if okToDelete(&spec) {
-			if err := f.Delete(&spec, opts...); err != nil {
+			if err := f.Delete(&spec, opts); err != nil {
 				return err
 			}
 		}
@@ -108,15 +114,17 @@ func (f *Manifest) DeleteAll(opts ...client.DeleteOption) error {
 	return nil
 }
 
-// Delete removes the specified objects, which do not need to be registered as
-// `Resources` in the Manifest.
-func (f *Manifest) Delete(spec *unstructured.Unstructured, opts ...client.DeleteOption) error {
+func (f *Manifest) Delete(spec *unstructured.Unstructured, opts *metav1.DeleteOptions) error {
 	current, err := f.Get(spec)
 	if current == nil && err == nil {
 		return nil
 	}
+	resource, err := f.ResourceInterface(spec)
+	if err != nil {
+		return err
+	}
 	logResource("Deleting", spec)
-	if err := f.client.Delete(context.TODO(), spec, opts...); err != nil {
+	if err := resource.Delete(spec.GetName(), opts); err != nil {
 		// ignore GC race conditions triggered by owner references
 		if !errors.IsNotFound(err) {
 			return err
@@ -128,10 +136,11 @@ func (f *Manifest) Delete(spec *unstructured.Unstructured, opts ...client.Delete
 // Get collects a full resource body (or `nil`) from a partial resource
 // supplied in `spec`.
 func (f *Manifest) Get(spec *unstructured.Unstructured) (*unstructured.Unstructured, error) {
-	key := client.ObjectKey{Namespace: spec.GetNamespace(), Name: spec.GetName()}
-	result := &unstructured.Unstructured{}
-	result.SetGroupVersionKind(spec.GroupVersionKind())
-	err := f.client.Get(context.TODO(), key, result)
+	resource, err := f.ResourceInterface(spec)
+	if err != nil {
+		return nil, err
+	}
+	result, err := resource.Get(spec.GetName(), metav1.GetOptions{})
 	if err != nil {
 		result = nil
 		if errors.IsNotFound(err) {
@@ -141,8 +150,18 @@ func (f *Manifest) Get(spec *unstructured.Unstructured) (*unstructured.Unstructu
 	return result, err
 }
 
-// UpdateChanged recursively merges JSON-style values in `src` into `tgt`.
-// 
+func (f *Manifest) ResourceInterface(spec *unstructured.Unstructured) (dynamic.ResourceInterface, error) {
+	gvk := spec.GroupVersionKind()
+	mapping, err := f.mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+	if err != nil {
+		return nil, err
+	}
+	if mapping.Scope.Name() == meta.RESTScopeNameRoot {
+		return f.client.Resource(mapping.Resource), nil
+	}
+	return f.client.Resource(mapping.Resource).Namespace(spec.GetNamespace()), nil
+}
+
 // We need to preserve the top-level target keys, specifically
 // 'metadata.resourceVersion', 'spec.clusterIP', and any existing
 // entries in a ConfigMap's 'data' field. So we only overwrite fields
