@@ -6,10 +6,11 @@ import (
 
 	. "github.com/jcrossley3/manifestival"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/client-go/rest"
 )
 
 func TestTransform(t *testing.T) {
-	f, err := NewManifest("testdata/tree", true, nil)
+	f, err := NewManifest("testdata/tree", true, &rest.Config{}, nil)
 	if err != nil {
 		t.Errorf("NewManifest() = %v, wanted no error", err)
 	}
@@ -40,7 +41,7 @@ func TestTransform(t *testing.T) {
 }
 
 func TestTransformCombo(t *testing.T) {
-	f, err := NewManifest("testdata/tree", true, nil)
+	f, err := NewManifest("testdata/tree", true, &rest.Config{}, nil)
 	if err != nil {
 		t.Errorf("NewManifest() = %v, wanted no error", err)
 	}
@@ -80,15 +81,15 @@ func TestInjectNamespace(t *testing.T) {
 			t.Errorf("Expected '%s', got '%s'", expected, ns)
 		}
 	}
-	f, _ := NewManifest("testdata/crb.yaml", true, nil)
+	f, err := NewManifest("testdata/crb.yaml", true, &rest.Config{}, nil)
 	if len(f.Resources) != 2 {
-		t.Errorf("Expected 2 resources, got %d", len(f.Resources))
+		t.Errorf("Expected 2 resources from crb.yaml, got %d (%s)", len(f.Resources), err)
 	}
 	if err := f.Transform(InjectNamespace("foo")); err != nil {
 		t.Error(err)
 	}
 	if len(f.Resources) != 2 {
-		t.Errorf("Expected 2 resource, got %d", len(f.Resources))
+		t.Errorf("Expected 2 resources with 'foo' ns, got %d", len(f.Resources))
 	}
 	if f.Resources[0].GetName() != "foo" {
 		t.Errorf("Expected namespace name to be foo, got %s", f.Resources[0].GetName())
