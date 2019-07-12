@@ -10,11 +10,7 @@ import (
 )
 
 func TestTransform(t *testing.T) {
-	f, err := NewManifest("testdata/tree", true, &rest.Config{}, nil)
-	if err != nil {
-		t.Errorf("NewManifest() = %v, wanted no error", err)
-	}
-
+	f, _ := NewManifest("testdata/tree", true, &rest.Config{})
 	actual := f.Resources
 	if len(actual) != 5 {
 		t.Errorf("Failed to read all resources: %s", actual)
@@ -41,10 +37,7 @@ func TestTransform(t *testing.T) {
 }
 
 func TestTransformCombo(t *testing.T) {
-	f, err := NewManifest("testdata/tree", true, &rest.Config{}, nil)
-	if err != nil {
-		t.Errorf("NewManifest() = %v, wanted no error", err)
-	}
+	f, _ := NewManifest("testdata/tree", true, &rest.Config{})
 	if len(f.Resources) != 5 {
 		t.Errorf("Failed to read all resources: %s", f.Resources)
 	}
@@ -81,7 +74,7 @@ func TestInjectNamespace(t *testing.T) {
 			t.Errorf("Expected '%s', got '%s'", expected, ns)
 		}
 	}
-	f, err := NewManifest("testdata/crb.yaml", true, &rest.Config{}, nil)
+	f, err := NewManifest("testdata/crb.yaml", true, &rest.Config{})
 	if len(f.Resources) != 2 {
 		t.Errorf("Expected 2 resources from crb.yaml, got %d (%s)", len(f.Resources), err)
 	}
