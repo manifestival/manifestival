@@ -29,20 +29,57 @@
   version = "v1.3.1"
 
 [[projects]]
-  digest = "1:15042ad3498153684d09f393bbaec6b216c8eec6d61f63dff711de7d64ed8861"
+  digest = "1:17fe264ee908afc795734e8c4e63db2accabaf57326dbf21763a7d6b86096260"
   name = "github.com/golang/protobuf"
-  packages = ["proto"]
+  packages = [
+    "proto",
+    "ptypes",
+    "ptypes/any",
+    "ptypes/duration",
+    "ptypes/timestamp",
+  ]
   pruneopts = "UT"
   revision = "b4deda0973fb4c70b50d226b1af49f3da59f5265"
   version = "v1.1.0"
 
 [[projects]]
-  digest = "1:a6181aca1fd5e27103f9a920876f29ac72854df7345a39f3b01e61c8c94cc8af"
+  digest = "1:0bfbe13936953a98ae3cfe8ed6670d396ad81edf069a806d2f6515d7bb6950df"
+  name = "github.com/google/btree"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "4030bb1f1f0c35b30ca7009e9ebd06849dd45306"
+  version = "v1.0.0"
+
+[[projects]]
+  digest = "1:41bfd4219241b7f7d6e6fdb13fc712576f1337e68e6b895136283b76928fdd66"
   name = "github.com/google/gofuzz"
   packages = ["."]
   pruneopts = "UT"
   revision = "f140a6486e521aad38f5917de355cbf147cc0496"
   version = "v1.0.0"
+
+[[projects]]
+  digest = "1:d1a3774c1f8336a21669d6da87a7bafb4d6171a84752268b7011e767d6722c2b"
+  name = "github.com/googleapis/gnostic"
+  packages = [
+    "OpenAPIv2",
+    "compiler",
+    "extensions",
+  ]
+  pruneopts = "UT"
+  revision = "e73c7ec21d36ddb0711cb36d1502d18363b5c2c9"
+  version = "v0.3.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:5fc0e23b254a1bd7d8d2d42fa093ba33471d08f52fe04afd3713adabb5888dc3"
+  name = "github.com/gregjones/httpcache"
+  packages = [
+    ".",
+    "diskcache",
+  ]
+  pruneopts = "UT"
+  revision = "901d90724c7919163f472a9812253fb26761123d"
 
 [[projects]]
   digest = "1:eaefc85d32c03e5f0c2b88ea2f79fce3d993e2c78316d21319575dd4ea9153ca"
@@ -67,6 +104,22 @@
   pruneopts = "UT"
   revision = "4b7aa43c6742a2c18fdef89dd197aaae7dac7ccd"
   version = "1.0.1"
+
+[[projects]]
+  branch = "master"
+  digest = "1:89da0f0574bc94cfd0ac8b59af67bf76cdd110d503df2721006b9f0492394333"
+  name = "github.com/petar/GoLLRB"
+  packages = ["llrb"]
+  pruneopts = "UT"
+  revision = "33fb24c13b99c46c93183c291836c573ac382536"
+
+[[projects]]
+  digest = "1:a8c2725121694dfbf6d552fb86fe6b46e3e7135ea05db580c28695b916162aad"
+  name = "github.com/peterbourgon/diskv"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "0be1b92a6df0e4f5cb0a5d15fb7f643d0ad93ce6"
+  version = "v3.0.0"
 
 [[projects]]
   digest = "1:777e729b475d3895c7229552aa10076f0d177daf37c0a72258006d046d329960"
@@ -297,6 +350,47 @@
   version = "2019.2.3"
 
 [[projects]]
+  branch = "release-1.13"
+  digest = "1:6cec2c64c7569cd43b9fa5f8973f3a82919ebed36296d19312de057e59651b05"
+  name = "k8s.io/api"
+  packages = [
+    "admissionregistration/v1alpha1",
+    "admissionregistration/v1beta1",
+    "apps/v1",
+    "apps/v1beta1",
+    "apps/v1beta2",
+    "auditregistration/v1alpha1",
+    "authentication/v1",
+    "authentication/v1beta1",
+    "authorization/v1",
+    "authorization/v1beta1",
+    "autoscaling/v1",
+    "autoscaling/v2beta1",
+    "autoscaling/v2beta2",
+    "batch/v1",
+    "batch/v1beta1",
+    "batch/v2alpha1",
+    "certificates/v1beta1",
+    "coordination/v1beta1",
+    "core/v1",
+    "events/v1beta1",
+    "extensions/v1beta1",
+    "networking/v1",
+    "policy/v1beta1",
+    "rbac/v1",
+    "rbac/v1alpha1",
+    "rbac/v1beta1",
+    "scheduling/v1alpha1",
+    "scheduling/v1beta1",
+    "settings/v1alpha1",
+    "storage/v1",
+    "storage/v1alpha1",
+    "storage/v1beta1",
+  ]
+  pruneopts = "UT"
+  revision = "781da4e7b28a3d23a108ec63be899e68fa745011"
+
+[[projects]]
   digest = "1:350c76315d8fbafb7e6750c9abb76ab3df9b0bcd4d5729530cb1edb210c5cc33"
   name = "k8s.io/apimachinery"
   packages = [
@@ -341,10 +435,12 @@
   version = "kubernetes-1.13.1"
 
 [[projects]]
-  digest = "1:66032b0d2f39a160d930ed1b1aed53ad8f911743104b60e2bb0d68fb26fea9db"
+  digest = "1:439f7c74c7fbf4744cbda7690d90a5975c039fdaa47ba7349b0951966ece5200"
   name = "k8s.io/client-go"
   packages = [
+    "discovery",
     "dynamic",
+    "kubernetes/scheme",
     "pkg/apis/clientauthentication",
     "pkg/apis/clientauthentication/v1alpha1",
     "pkg/apis/clientauthentication/v1beta1",
@@ -352,6 +448,7 @@
     "plugin/pkg/client/auth/exec",
     "rest",
     "rest/watch",
+    "restmapper",
     "tools/clientcmd/api",
     "tools/metrics",
     "transport",
@@ -381,9 +478,12 @@
   revision = "6ca3b61696b65b0e81f1a39b4937fc2d2994ed6a"
 
 [[projects]]
-  digest = "1:9d01f79d91d75c0e75578144de961abf2c925475080dfdad99fc42c1f24e6b9e"
+  digest = "1:192259096f6555896a170463c2067f9f937be9dcd286083cba29287c46a8892c"
   name = "sigs.k8s.io/controller-runtime"
-  packages = ["pkg/runtime/log"]
+  packages = [
+    "pkg/client/apiutil",
+    "pkg/runtime/log",
+  ]
   pruneopts = "UT"
   revision = "477bf4f046c31c351b46fa00262bc814ac0bbca1"
   version = "v0.1.11"
@@ -409,6 +509,7 @@
     "k8s.io/apimachinery/pkg/util/yaml",
     "k8s.io/client-go/dynamic",
     "k8s.io/client-go/rest",
+    "sigs.k8s.io/controller-runtime/pkg/client/apiutil",
     "sigs.k8s.io/controller-runtime/pkg/runtime/log",
   ]
   solver-name = "gps-cdcl"

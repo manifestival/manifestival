@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
@@ -45,13 +46,17 @@ type Manifest struct {
 
 var _ Manifestival = &Manifest{}
 
-func NewManifest(pathname string, recursive bool, config *rest.Config, mapper meta.RESTMapper) (Manifest, error) {
+func NewManifest(pathname string, recursive bool, config *rest.Config) (Manifest, error) {
 	log.Info("Reading manifest", "name", pathname)
 	resources, err := Parse(pathname, recursive)
 	if err != nil {
 		return Manifest{}, err
 	}
 	client, err := dynamic.NewForConfig(config)
+	if err != nil {
+		return Manifest{Resources: resources}, err
+	}
+	mapper, err := apiutil.NewDiscoveryRESTMapper(config)
 	if err != nil {
 		return Manifest{Resources: resources}, err
 	}
