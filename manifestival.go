@@ -3,6 +3,7 @@ package manifestival
 import (
 	"fmt"
 
+	"github.com/operator-framework/operator-sdk/pkg/restmapper"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -10,7 +11,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
-	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
@@ -51,7 +51,7 @@ func NewManifest(pathname string, recursive bool, config *rest.Config) (Manifest
 	if err != nil {
 		return Manifest{Resources: resources}, err
 	}
-	mapper, err := apiutil.NewDiscoveryRESTMapper(config)
+	mapper, err := restmapper.NewDynamicRESTMapper(config)
 	if err != nil {
 		return Manifest{Resources: resources}, err
 	}
@@ -104,7 +104,7 @@ func (f *Manifest) DeleteAll(opts *metav1.DeleteOptions) error {
 	for _, spec := range a {
 		if okToDelete(&spec) {
 			if err := f.Delete(&spec, opts); err != nil {
-				return err
+				log.Error(err, "Delete failed")
 			}
 		}
 	}
@@ -116,11 +116,11 @@ func (f *Manifest) Delete(spec *unstructured.Unstructured, opts *metav1.DeleteOp
 	if current == nil && err == nil {
 		return nil
 	}
+	logResource("Deleting", spec)
 	resource, err := f.ResourceInterface(spec)
 	if err != nil {
 		return err
 	}
-	logResource("Deleting", spec)
 	if err := resource.Delete(spec.GetName(), opts); err != nil {
 		// ignore GC race conditions triggered by owner references
 		if !errors.IsNotFound(err) {

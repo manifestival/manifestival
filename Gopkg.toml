@@ -33,6 +33,10 @@
   name = "sigs.k8s.io/controller-runtime"
   version = "0.1.10"
 
+[[constraint]]
+  name = "github.com/operator-framework/operator-sdk"
+  version = "=v0.8.0"
+
 [prune]
   go-tests = true
   unused-packages = true
