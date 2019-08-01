@@ -3,6 +3,7 @@ package manifestival
 import (
 	"fmt"
 
+	"github.com/operator-framework/operator-sdk/pkg/restmapper"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -10,7 +11,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
-	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
@@ -51,7 +51,7 @@ func NewManifest(pathname string, recursive bool, config *rest.Config) (Manifest
 	if err != nil {
 		return Manifest{Resources: resources}, err
 	}
-	mapper, err := apiutil.NewDiscoveryRESTMapper(config)
+	mapper, err := restmapper.NewDynamicRESTMapper(config)
 	if err != nil {
 		return Manifest{Resources: resources}, err
 	}
