@@ -104,7 +104,7 @@ func (f *Manifest) DeleteAll(opts *metav1.DeleteOptions) error {
 	for _, spec := range a {
 		if okToDelete(&spec) {
 			if err := f.Delete(&spec, opts); err != nil {
-				return err
+				log.Error(err, "Delete failed")
 			}
 		}
 	}
@@ -116,11 +116,11 @@ func (f *Manifest) Delete(spec *unstructured.Unstructured, opts *metav1.DeleteOp
 	if current == nil && err == nil {
 		return nil
 	}
+	logResource("Deleting", spec)
 	resource, err := f.ResourceInterface(spec)
 	if err != nil {
 		return err
 	}
-	logResource("Deleting", spec)
 	if err := resource.Delete(spec.GetName(), opts); err != nil {
 		// ignore GC race conditions triggered by owner references
 		if !errors.IsNotFound(err) {
