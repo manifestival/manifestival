@@ -106,6 +106,14 @@
   version = "1.0.1"
 
 [[projects]]
+  digest = "1:4af5ef5028af0c996043a4ed5731c51a649fc3d27d700a2d88a47d51591ab993"
+  name = "github.com/operator-framework/operator-sdk"
+  packages = ["pkg/restmapper"]
+  pruneopts = "UT"
+  revision = "78c472461e75e6c64589cfadf577a2004b8a26b3"
+  version = "v0.8.0"
+
+[[projects]]
   branch = "master"
   digest = "1:89da0f0574bc94cfd0ac8b59af67bf76cdd110d503df2721006b9f0492394333"
   name = "github.com/petar/GoLLRB"
@@ -478,12 +486,9 @@
   revision = "6ca3b61696b65b0e81f1a39b4937fc2d2994ed6a"
 
 [[projects]]
-  digest = "1:192259096f6555896a170463c2067f9f937be9dcd286083cba29287c46a8892c"
+  digest = "1:9d01f79d91d75c0e75578144de961abf2c925475080dfdad99fc42c1f24e6b9e"
   name = "sigs.k8s.io/controller-runtime"
-  packages = [
-    "pkg/client/apiutil",
-    "pkg/runtime/log",
-  ]
+  packages = ["pkg/runtime/log"]
   pruneopts = "UT"
   revision = "477bf4f046c31c351b46fa00262bc814ac0bbca1"
   version = "v0.1.11"
@@ -500,6 +505,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/operator-framework/operator-sdk/pkg/restmapper",
     "k8s.io/apimachinery/pkg/api/equality",
     "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/api/meta",
@@ -509,7 +515,6 @@
     "k8s.io/apimachinery/pkg/util/yaml",
     "k8s.io/client-go/dynamic",
     "k8s.io/client-go/rest",
-    "sigs.k8s.io/controller-runtime/pkg/client/apiutil",
     "sigs.k8s.io/controller-runtime/pkg/runtime/log",
   ]
   solver-name = "gps-cdcl"
