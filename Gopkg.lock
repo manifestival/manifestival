@@ -386,14 +386,6 @@
   revision = "8139d8cb77af419532b33dfa7dd09fbc5f1d344f"
 
 [[projects]]
-  digest = "1:9d01f79d91d75c0e75578144de961abf2c925475080dfdad99fc42c1f24e6b9e"
-  name = "sigs.k8s.io/controller-runtime"
-  packages = ["pkg/runtime/log"]
-  pruneopts = "UT"
-  revision = "477bf4f046c31c351b46fa00262bc814ac0bbca1"
-  version = "v0.1.11"
-
-[[projects]]
   digest = "1:7719608fe0b52a4ece56c2dde37bedd95b938677d1ab0f84b8a7852e4c59f849"
   name = "sigs.k8s.io/yaml"
   packages = ["."]
@@ -405,7 +397,10 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/go-logr/logr",
+    "github.com/go-logr/zapr",
     "github.com/operator-framework/operator-sdk/pkg/restmapper",
+    "go.uber.org/zap",
     "k8s.io/apimachinery/pkg/api/equality",
     "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/api/meta",
@@ -415,7 +410,6 @@
     "k8s.io/apimachinery/pkg/util/yaml",
     "k8s.io/client-go/dynamic",
     "k8s.io/client-go/rest",
-    "sigs.k8s.io/controller-runtime/pkg/runtime/log",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

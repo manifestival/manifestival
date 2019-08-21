@@ -3,7 +3,10 @@ package manifestival
 import (
 	"fmt"
 
+	"github.com/go-logr/logr"
+	"github.com/go-logr/zapr"
 	"github.com/operator-framework/operator-sdk/pkg/restmapper"
+	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -11,12 +14,13 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
-var (
-	log = logf.Log.WithName("manifestival")
-)
+var log = zapr.NewLogger(zap.NewExample())
+
+func SetLogger(l logr.Logger) {
+	log = l.WithName("manifestival")
+}
 
 type Manifestival interface {
 	// Either updates or creates all resources in the manifest
