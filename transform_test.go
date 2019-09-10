@@ -10,12 +10,13 @@ import (
 )
 
 func TestTransform(t *testing.T) {
-	f, _ := NewManifest("testdata/tree", true, &rest.Config{})
+	m, _ := NewManifest("testdata/tree", true, &rest.Config{})
+	f := &m
 	actual := f.Resources
 	if len(actual) != 5 {
 		t.Errorf("Failed to read all resources: %s", actual)
 	}
-	f.Transform(func(u *unstructured.Unstructured) error {
+	f, _ = f.Transform(func(u *unstructured.Unstructured) error {
 		if u.GetKind() == "B" {
 			u.SetResourceVersion("69")
 		}
@@ -37,7 +38,8 @@ func TestTransform(t *testing.T) {
 }
 
 func TestTransformCombo(t *testing.T) {
-	f, _ := NewManifest("testdata/tree", true, &rest.Config{})
+	m, err := NewManifest("testdata/tree", true, &rest.Config{})
+	f := &m
 	if len(f.Resources) != 5 {
 		t.Errorf("Failed to read all resources: %s", f.Resources)
 	}
@@ -53,7 +55,7 @@ func TestTransformCombo(t *testing.T) {
 		}
 		return nil
 	}
-	if err := f.Transform(fn1, fn2); err != nil {
+	if f, err = f.Transform(fn1, fn2); err != nil {
 		t.Error(err)
 	}
 	for _, x := range f.Resources {
@@ -74,11 +76,12 @@ func TestInjectNamespace(t *testing.T) {
 			t.Errorf("Expected '%s', got '%s'", expected, ns)
 		}
 	}
-	f, err := NewManifest("testdata/crb.yaml", true, &rest.Config{})
+	m, err := NewManifest("testdata/crb.yaml", true, &rest.Config{})
+	f := &m
 	if len(f.Resources) != 2 {
 		t.Errorf("Expected 2 resources from crb.yaml, got %d (%s)", len(f.Resources), err)
 	}
-	if err := f.Transform(InjectNamespace("foo")); err != nil {
+	if f, err = f.Transform(InjectNamespace("foo")); err != nil {
 		t.Error(err)
 	}
 	if len(f.Resources) != 2 {
@@ -89,7 +92,7 @@ func TestInjectNamespace(t *testing.T) {
 	}
 	assert(f.Resources[1], "foo")
 	os.Setenv("FOO", "food")
-	if err := f.Transform(InjectNamespace("$FOO")); err != nil {
+	if f, err = f.Transform(InjectNamespace("$FOO")); err != nil {
 		t.Error(err)
 	}
 	if f.Resources[0].GetName() != "food" {
