@@ -21,20 +21,21 @@ type Owner interface {
 // Transform applies an ordered set of Transformer functions to the
 // `Resources` in this Manifest.  If an error occurs, no resources are
 // transformed.
-func (f *Manifest) Transform(fns ...Transformer) error {
+func (f *Manifest) Transform(fns ...Transformer) (*Manifest, error) {
 	var results []unstructured.Unstructured
 	for i := 0; i < len(f.Resources); i++ {
 		spec := f.Resources[i].DeepCopy()
 		for _, transform := range fns {
-			err := transform(spec)
-			if err != nil {
-				return err
+			if transform != nil {
+				err := transform(spec)
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
 		results = append(results, *spec)
 	}
-	f.Resources = results
-	return nil
+	return &Manifest{Resources: results, client: f.client, mapper: f.mapper}, nil
 }
 
 // InjectNamespace creates a Transformer which adds a namespace to existing
