@@ -189,6 +189,11 @@ func (f *Manifest) ResourceInterface(spec *unstructured.Unstructured) (dynamic.R
 func UpdateChanged(src, tgt map[string]interface{}) bool {
 	changed := false
 	for k, v := range src {
+		// Special case for ConfigMaps
+		if k == "data" && !equality.Semantic.DeepEqual(v, tgt[k]) {
+			tgt[k], changed = v, true
+			continue
+		}
 		if v, ok := v.(map[string]interface{}); ok {
 			if tgt[k] == nil {
 				tgt[k], changed = v, true
