@@ -79,12 +79,13 @@ func readDir(pathname string, recursive bool) ([]unstructured.Unstructured, erro
 	aggregated := []unstructured.Unstructured{}
 	for _, f := range list {
 		name := path.Join(pathname, f.Name())
+		pathDirOrFile, _ := os.Stat(name)
 		var els []unstructured.Unstructured
 
 		switch {
-		case f.IsDir() && recursive:
+		case pathDirOrFile.IsDir() && recursive:
 			els, err = readDir(name, recursive)
-		case !f.IsDir():
+		case !pathDirOrFile.IsDir():
 			els, err = readFile(name)
 		}
 
