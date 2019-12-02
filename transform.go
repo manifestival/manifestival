@@ -54,6 +54,18 @@ func InjectNamespace(ns string) Transformer {
 					m["namespace"] = namespace
 				}
 			}
+		case "validatingwebhookconfiguration", "mutatingwebhookconfiguration":
+			hooks, _, _ := unstructured.NestedFieldNoCopy(u.Object, "webhooks")
+			for _, hook := range hooks.([]interface{}) {
+				m := hook.(map[string]interface{})
+				if c, ok := m["clientConfig"]; ok {
+					cfg := c.(map[string]interface{})
+					if s, ok := cfg["service"]; ok {
+						srv := s.(map[string]interface{})
+						srv["namespace"] = namespace
+					}
+				}
+			}
 		}
 		if !isClusterScoped(u.GetKind()) {
 			u.SetNamespace(namespace)
