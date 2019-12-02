@@ -44,7 +44,7 @@ func TestParsing(t *testing.T) {
 		wantError: true,
 	}, {
 		name:      "dangling symlink",
-		path:      "testdata/dangling-symlink",
+		path:      filepath.FromSlash("testdata/dangling-symlink"),
 		wantError: true,
 	}, {
 		name:      "absolute path",
