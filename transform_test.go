@@ -100,3 +100,33 @@ func TestInjectNamespace(t *testing.T) {
 	}
 	assert(f.Resources[1], "food")
 }
+
+func TestInjectNamespaceWebhook(t *testing.T) {
+	assert := func(u unstructured.Unstructured, expected string) {
+		v, _, _ := unstructured.NestedSlice(u.Object, "webhooks")
+		ns, _, err := unstructured.NestedString(v[0].(map[string]interface{}), "clientConfig", "service", "namespace")
+		if err != nil {
+			t.Errorf("Failed to find `clientConfig.service.namespace`: %v", err)
+		}
+		if ns != expected {
+			t.Errorf("Expected %q, got %q", expected, ns)
+		}
+	}
+
+	f, _ := NewManifest("testdata/hooks.yaml", true, nil)
+	if len(f.Resources) != 1 {
+		t.Errorf("Expected 1 resource, got %d", len(f.Resources))
+	}
+	if err := f.Transform(InjectNamespace("foo")); err != nil{
+		t.Error(err)
+	}
+	if len(f.Resources) != 1 {
+		t.Errorf("Expected 1 resource, got %d", len(f.Resources))
+	}
+	assert(f.Resources[0], "foo")
+	os.Setenv("FOO", "food")
+	if err := f.Transform(InjectNamespace("$FOO")); err != nil {
+		t.Error(err)
+	}
+	assert(f.Resources[0], "food")
+}
