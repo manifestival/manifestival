@@ -39,6 +39,10 @@ func TestParsing(t *testing.T) {
 		path:      "testdata/missing",
 		wantError: true,
 	}, {
+		name:      "dangling symlink",
+		path:      "testdata/dangling-symlink",
+		wantError: true,
+	}, {
 		name:      "absolute path",
 		path:      filepath.Join(os.Getenv("PWD"), "testdata/tree/dir/b.yaml"),
 		recursive: true,
