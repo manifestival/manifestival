@@ -82,9 +82,9 @@ func readDir(pathname string, recursive bool) ([]unstructured.Unstructured, erro
 		var els []unstructured.Unstructured
 
 		switch {
-		case f.IsDir() && recursive:
+		case pathDirOrFile.IsDir() && recursive:
 			els, err = readDir(name, recursive)
-		case !f.IsDir():
+		case !pathDirOrFile.IsDir():
 			els, err = readFile(name)
 		}
 
