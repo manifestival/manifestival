@@ -43,6 +43,10 @@ func TestParsing(t *testing.T) {
 		path:      filepath.FromSlash("testdata/dangling-symlink"),
 		wantError: true,
 	}, {
+		name:      "dangling symlink",
+		path:      "testdata/dangling-symlink",
+		wantError: true,
+	}, {
 		name:      "absolute path",
 		path:      filepath.Join(os.Getenv("PWD"), filepath.FromSlash("testdata/tree/dir/b.yaml")),
 		recursive: true,
