@@ -50,6 +50,10 @@ type Manifest struct {
 
 var _ Manifestival = &Manifest{}
 
+// NewManifest creates a Manifest from a comma-separated set of yaml files or
+// directories (and subdirectories if the `recursive` option is set). The
+// Manifest will be evaluated using the supplied `config` against a particular
+// Kubernetes apiserver.
 func NewManifest(pathname string, recursive bool, config *rest.Config) (Manifest, error) {
 	log.Info("Reading manifest", "name", pathname)
 	resources, err := Parse(pathname, recursive)
@@ -106,6 +110,7 @@ func (f *Manifest) Apply(spec *unstructured.Unstructured) error {
 	return nil
 }
 
+// DeleteAll removes all tracked `Resources` in the Manifest.
 func (f *Manifest) DeleteAll(opts *metav1.DeleteOptions) error {
 	a := make([]unstructured.Unstructured, len(f.Resources))
 	copy(a, f.Resources)
@@ -123,6 +128,8 @@ func (f *Manifest) DeleteAll(opts *metav1.DeleteOptions) error {
 	return nil
 }
 
+// Delete removes the specified objects, which do not need to be registered as
+// `Resources` in the Manifest.
 func (f *Manifest) Delete(spec *unstructured.Unstructured, opts *metav1.DeleteOptions) error {
 	current, err := f.Get(spec)
 	if current == nil && err == nil {
@@ -159,6 +166,7 @@ func (f *Manifest) Get(spec *unstructured.Unstructured) (*unstructured.Unstructu
 	return result, err
 }
 
+// ResourceInterface returns an interface appropriate for the spec
 func (f *Manifest) ResourceInterface(spec *unstructured.Unstructured) (dynamic.ResourceInterface, error) {
 	gvk := spec.GroupVersionKind()
 	mapping, err := f.mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
@@ -171,6 +179,8 @@ func (f *Manifest) ResourceInterface(spec *unstructured.Unstructured) (dynamic.R
 	return f.client.Resource(mapping.Resource).Namespace(spec.GetNamespace()), nil
 }
 
+// UpdateChanged recursively merges JSON-style values in `src` into `tgt`.
+//
 // We need to preserve the top-level target keys, specifically
 // 'metadata.resourceVersion', 'spec.clusterIP', and any existing
 // entries in a ConfigMap's 'data' field. So we only overwrite fields
