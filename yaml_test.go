@@ -21,30 +21,30 @@ func TestParsing(t *testing.T) {
 		want: []string{"a", "b"},
 	}, {
 		name:      "single directory, recursive",
-		path:      "testdata/tree",
+		path:      filepath.FromSlash("testdata/tree"),
 		recursive: true,
 		want:      []string{"foo", "bar", "baz", "a", "b"},
 	}, {
 		name:      "single file",
-		path:      "testdata/tree/dir/b.yaml",
+		path:      filepath.FromSlash("testdata/tree/dir/b.yaml"),
 		recursive: true,
 		want:      []string{"bar", "baz"},
 	}, {
 		name:      "single file, recursive",
-		path:      "testdata/tree/file.yaml",
+		path:      filepath.FromSlash("testdata/tree/file.yaml"),
 		recursive: true,
 		want:      []string{"a", "b"},
 	}, {
 		name:      "missing file",
-		path:      "testdata/missing",
+		path:      filepath.FromSlash("testdata/missing"),
 		wantError: true,
 	}, {
 		name:      "dangling symlink",
-		path:      "testdata/dangling-symlink",
+		path:      filepath.FromSlash("testdata/dangling-symlink"),
 		wantError: true,
 	}, {
 		name:      "absolute path",
-		path:      filepath.Join(os.Getenv("PWD"), "testdata/tree/dir/b.yaml"),
+		path:      filepath.Join(os.Getenv("PWD"), filepath.FromSlash("testdata/tree/dir/b.yaml")),
 		recursive: true,
 		want:      []string{"bar", "baz"},
 	}, {
@@ -70,7 +70,7 @@ func TestParsing(t *testing.T) {
 		want:      []string{"a", "b", "foo", "bar", "baz"},
 	}, {
 		name:      "file and directory, recursive",
-		path:      "testdata/tree/file.yaml,testdata/tree/dir",
+		path:      filepath.FromSlash("testdata/tree/file.yaml") + "," + filepath.FromSlash("testdata/tree/dir"),
 		recursive: true,
 		want:      []string{"a", "b", "foo", "bar", "baz"},
 	}, {
