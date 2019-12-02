@@ -113,11 +113,12 @@ func TestInjectNamespaceWebhook(t *testing.T) {
 		}
 	}
 
-	f, _ := NewManifest("testdata/hooks.yaml", true, nil)
+	m, err := NewManifest("testdata/hooks.yaml", true, &rest.Config{})
+	f := &m
 	if len(f.Resources) != 1 {
 		t.Errorf("Expected 1 resource, got %d", len(f.Resources))
 	}
-	if err := f.Transform(InjectNamespace("foo")); err != nil {
+	if f, err = f.Transform(InjectNamespace("foo")); err != nil {
 		t.Error(err)
 	}
 	if len(f.Resources) != 1 {
@@ -125,7 +126,7 @@ func TestInjectNamespaceWebhook(t *testing.T) {
 	}
 	assert(f.Resources[0], "foo")
 	os.Setenv("FOO", "food")
-	if err := f.Transform(InjectNamespace("$FOO")); err != nil {
+	if f, err = f.Transform(InjectNamespace("$FOO")); err != nil {
 		t.Error(err)
 	}
 	assert(f.Resources[0], "food")
