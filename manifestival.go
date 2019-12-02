@@ -37,7 +37,7 @@ type Manifestival interface {
 	// Returns a copy of the resource from the api server, nil if not found
 	Get(spec *unstructured.Unstructured) (*unstructured.Unstructured, error)
 	// Transforms the resources within a Manifest
-	Transform(fns ...Transformer) error
+	Transform(fns ...Transformer) (*Manifest, error)
 }
 
 // Manifest tracks a set of concrete resources which should be managed as a
@@ -189,6 +189,11 @@ func (f *Manifest) ResourceInterface(spec *unstructured.Unstructured) (dynamic.R
 func UpdateChanged(src, tgt map[string]interface{}) bool {
 	changed := false
 	for k, v := range src {
+		// Special case for ConfigMaps
+		if k == "data" && !equality.Semantic.DeepEqual(v, tgt[k]) {
+			tgt[k], changed = v, true
+			continue
+		}
 		if v, ok := v.(map[string]interface{}); ok {
 			if tgt[k] == nil {
 				tgt[k], changed = v, true
