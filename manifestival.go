@@ -5,9 +5,10 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
+	"github.com/jcrossley3/manifestival/patch"
 	"github.com/operator-framework/operator-sdk/pkg/restmapper"
 	"go.uber.org/zap"
-	"k8s.io/apimachinery/pkg/api/equality"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -94,14 +95,22 @@ func (f *Manifest) Apply(spec *unstructured.Unstructured) error {
 	}
 	if current == nil {
 		logResource("Creating", spec)
+		annotate(spec, v1.LastAppliedConfigAnnotation, patch.MakeLastAppliedConfig(spec))
 		annotate(spec, "manifestival", resourceCreated)
-		if _, err = resource.Create(spec.DeepCopy(), metav1.CreateOptions{}); err != nil {
+		if _, err = resource.Create(spec, metav1.CreateOptions{}); err != nil {
 			return err
 		}
 	} else {
-		// Update existing one
-		if UpdateChanged(spec.UnstructuredContent(), current.UnstructuredContent()) {
-			logResource("Updating", spec)
+		patch, err := patch.NewPatch(spec, current)
+		if err != nil {
+			return err
+		}
+		if patch.IsRequired() {
+			log.Info("Merging", "diff", patch)
+			if err := patch.Merge(current); err != nil {
+				return err
+			}
+			logResource("Updating", current)
 			if _, err = resource.Update(current, metav1.UpdateOptions{}); err != nil {
 				return err
 			}
@@ -177,38 +186,6 @@ func (f *Manifest) ResourceInterface(spec *unstructured.Unstructured) (dynamic.R
 		return f.client.Resource(mapping.Resource), nil
 	}
 	return f.client.Resource(mapping.Resource).Namespace(spec.GetNamespace()), nil
-}
-
-// UpdateChanged recursively merges JSON-style values in `src` into `tgt`.
-//
-// We need to preserve the top-level target keys, specifically
-// 'metadata.resourceVersion', 'spec.clusterIP', and any existing
-// entries in a ConfigMap's 'data' field. So we only overwrite fields
-// set in our src resource.
-// TODO: Use Patch instead
-func UpdateChanged(src, tgt map[string]interface{}) bool {
-	changed := false
-	for k, v := range src {
-		// Special case for ConfigMaps
-		if k == "data" && !equality.Semantic.DeepEqual(v, tgt[k]) {
-			tgt[k], changed = v, true
-			continue
-		}
-		if v, ok := v.(map[string]interface{}); ok {
-			if tgt[k] == nil {
-				tgt[k], changed = v, true
-			} else if UpdateChanged(v, tgt[k].(map[string]interface{})) {
-				// This could be an issue if a field in a nested src
-				// map doesn't overwrite its corresponding tgt
-				changed = true
-			}
-			continue
-		}
-		if !equality.Semantic.DeepEqual(v, tgt[k]) {
-			tgt[k], changed = v, true
-		}
-	}
-	return changed
 }
 
 func logResource(msg string, spec *unstructured.Unstructured) {
