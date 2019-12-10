@@ -24,9 +24,9 @@ type Manifestival interface {
 	// Updates or creates a particular resource
 	Apply(*unstructured.Unstructured) error
 	// Deletes all resources in the manifest
-	DeleteAll(opts ...client.DeleteOptionFunc) error
+	DeleteAll(opts ...client.DeleteOption) error
 	// Deletes a particular resource
-	Delete(spec *unstructured.Unstructured, opts ...client.DeleteOptionFunc) error
+	Delete(spec *unstructured.Unstructured, opts ...client.DeleteOption) error
 	// Returns a copy of the resource from the api server, nil if not found
 	Get(spec *unstructured.Unstructured) (*unstructured.Unstructured, error)
 	// Transforms the resources within a Manifest
@@ -91,7 +91,7 @@ func (f *Manifest) Apply(spec *unstructured.Unstructured) error {
 }
 
 // DeleteAll removes all tracked `Resources` in the Manifest.
-func (f *Manifest) DeleteAll(opts ...client.DeleteOptionFunc) error {
+func (f *Manifest) DeleteAll(opts ...client.DeleteOption) error {
 	a := make([]unstructured.Unstructured, len(f.Resources))
 	copy(a, f.Resources)
 	// we want to delete in reverse order
@@ -110,7 +110,7 @@ func (f *Manifest) DeleteAll(opts ...client.DeleteOptionFunc) error {
 
 // Delete removes the specified objects, which do not need to be registered as
 // `Resources` in the Manifest.
-func (f *Manifest) Delete(spec *unstructured.Unstructured, opts ...client.DeleteOptionFunc) error {
+func (f *Manifest) Delete(spec *unstructured.Unstructured, opts ...client.DeleteOption) error {
 	current, err := f.Get(spec)
 	if current == nil && err == nil {
 		return nil
