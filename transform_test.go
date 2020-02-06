@@ -101,6 +101,39 @@ func TestInjectNamespace(t *testing.T) {
 	assert(f.Resources[1], "food")
 }
 
+func TestInjectNamespaceRoleBinding(t *testing.T) {
+	assert := func(u unstructured.Unstructured, expected string) {
+		v, _, _ := unstructured.NestedSlice(u.Object, "subjects")
+		ns := v[0].(map[string]interface{})["namespace"]
+		if ns != expected {
+			t.Errorf("Expected '%s', got '%s'", expected, ns)
+		}
+	}
+	m, err := NewManifest("testdata/rb.yaml", true, &rest.Config{})
+	f := &m
+	if len(f.Resources) != 2 {
+		t.Errorf("Expected 2 resources from crb.yaml, got %d (%s)", len(f.Resources), err)
+	}
+	if f, err = f.Transform(InjectNamespace("foo")); err != nil {
+		t.Error(err)
+	}
+	if len(f.Resources) != 2 {
+		t.Errorf("Expected 2 resources with 'foo' ns, got %d", len(f.Resources))
+	}
+	if f.Resources[0].GetName() != "foo" {
+		t.Errorf("Expected namespace name to be foo, got %s", f.Resources[0].GetName())
+	}
+	assert(f.Resources[1], "foo")
+	os.Setenv("FOO", "food")
+	if f, err = f.Transform(InjectNamespace("$FOO")); err != nil {
+		t.Error(err)
+	}
+	if f.Resources[0].GetName() != "food" {
+		t.Errorf("Expected namespace name to be food, got %s", f.Resources[0].GetName())
+	}
+	assert(f.Resources[1], "food")
+}
+
 func TestInjectNamespaceWebhook(t *testing.T) {
 	assert := func(u unstructured.Unstructured, expected string) {
 		v, _, _ := unstructured.NestedSlice(u.Object, "webhooks")
@@ -114,6 +147,36 @@ func TestInjectNamespaceWebhook(t *testing.T) {
 	}
 
 	m, err := NewManifest("testdata/hooks.yaml", true, &rest.Config{})
+	f := &m
+	if len(f.Resources) != 1 {
+		t.Errorf("Expected 1 resource, got %d", len(f.Resources))
+	}
+	if f, err = f.Transform(InjectNamespace("foo")); err != nil{
+		t.Error(err)
+	}
+	if len(f.Resources) != 1 {
+		t.Errorf("Expected 1 resource, got %d", len(f.Resources))
+	}
+	assert(f.Resources[0], "foo")
+	os.Setenv("FOO", "food")
+	if f, err = f.Transform(InjectNamespace("$FOO")); err != nil {
+		t.Error(err)
+	}
+	assert(f.Resources[0], "food")
+}
+
+func TestInjectNamespaceAPIService(t *testing.T) {
+	assert := func(u unstructured.Unstructured, expected string) {
+		ns, _, err := unstructured.NestedString(u.Object, "spec", "service", "namespace")
+		if err != nil {
+			t.Errorf("Failed to find `service.namespace`: %v", err)
+		}
+		if ns != expected {
+			t.Errorf("Expected %q, got %q", expected, ns)
+		}
+	}
+
+	m, err := NewManifest("testdata/apiservice.yaml", true, &rest.Config{})
 	f := &m
 	if len(f.Resources) != 1 {
 		t.Errorf("Expected 1 resource, got %d", len(f.Resources))
