@@ -47,7 +47,7 @@ func InjectNamespace(ns string) Transformer {
 		switch strings.ToLower(u.GetKind()) {
 		case "namespace":
 			u.SetName(namespace)
-		case "clusterrolebinding":
+		case "clusterrolebinding", "rolebinding":
 			subjects, _, _ := unstructured.NestedFieldNoCopy(u.Object, "subjects")
 			for _, subject := range subjects.([]interface{}) {
 				m := subject.(map[string]interface{})
@@ -66,6 +66,13 @@ func InjectNamespace(ns string) Transformer {
 						srv["namespace"] = namespace
 					}
 				}
+			}
+		case "apiservice":
+			spec, _, _ := unstructured.NestedFieldNoCopy(u.Object, "spec")
+			m := spec.(map[string]interface{})
+			if c, ok := m["service"]; ok {
+				srv := c.(map[string]interface{})
+				srv["namespace"] = namespace
 			}
 		}
 		if !isClusterScoped(u.GetKind()) {
