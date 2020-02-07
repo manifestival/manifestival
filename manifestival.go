@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
-	"github.com/jcrossley3/manifestival/patch"
+	"github.com/manifestival/manifestival/patch"
 	"github.com/operator-framework/operator-sdk/pkg/restmapper"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
