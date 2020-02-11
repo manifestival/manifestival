@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	. "github.com/jcrossley3/manifestival"
+	. "github.com/manifestival/manifestival"
 )
 
 func TestUpdateChanges(t *testing.T) {

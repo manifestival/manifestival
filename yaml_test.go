@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	. "github.com/jcrossley3/manifestival"
+	. "github.com/manifestival/manifestival"
 )
 
 func TestParsing(t *testing.T) {
@@ -49,7 +49,7 @@ func TestParsing(t *testing.T) {
 		want:      []string{"bar", "baz"},
 	}, {
 		name: "url",
-		path: "https://raw.githubusercontent.com/jcrossley3/manifestival/master/testdata/tree/file.yaml",
+		path: "https://raw.githubusercontent.com/manifestival/manifestival/master/testdata/tree/file.yaml",
 		want: []string{"a", "b"},
 	}, {
 		name:      "missing url",
@@ -57,15 +57,15 @@ func TestParsing(t *testing.T) {
 		wantError: true,
 	}, {
 		name: "multiple urls",
-		path: "https://raw.githubusercontent.com/jcrossley3/manifestival/master/testdata/tree/file.yaml,https://raw.githubusercontent.com/jcrossley3/manifestival/master/testdata/tree/dir/a.yaml",
+		path: "https://raw.githubusercontent.com/manifestival/manifestival/master/testdata/tree/file.yaml,https://raw.githubusercontent.com/manifestival/manifestival/master/testdata/tree/dir/a.yaml",
 		want: []string{"a", "b", "foo"},
 	}, {
 		name: "url and file",
-		path: "https://raw.githubusercontent.com/jcrossley3/manifestival/master/testdata/tree/file.yaml,testdata/tree/dir/a.yaml",
+		path: "https://raw.githubusercontent.com/manifestival/manifestival/master/testdata/tree/file.yaml,testdata/tree/dir/a.yaml",
 		want: []string{"a", "b", "foo"},
 	}, {
 		name:      "url and directory, recursive",
-		path:      "https://raw.githubusercontent.com/jcrossley3/manifestival/master/testdata/tree/file.yaml,testdata/tree/dir",
+		path:      "https://raw.githubusercontent.com/manifestival/manifestival/master/testdata/tree/file.yaml,testdata/tree/dir",
 		recursive: true,
 		want:      []string{"a", "b", "foo", "bar", "baz"},
 	}, {
@@ -79,7 +79,7 @@ func TestParsing(t *testing.T) {
 		wantError: true,
 	}, {
 		name:      "url and empty path -> invalid input",
-		path:      "https://raw.githubusercontent.com/jcrossley3/manifestival/master/testdata/tree/file.yaml,",
+		path:      "https://raw.githubusercontent.com/manifestival/manifestival/master/testdata/tree/file.yaml,",
 		wantError: true,
 	}}
 

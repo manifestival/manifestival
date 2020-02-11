@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	. "github.com/jcrossley3/manifestival"
+	. "github.com/manifestival/manifestival"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -120,7 +120,7 @@ func TestInjectNamespaceWebhook(t *testing.T) {
 	if len(f.Resources) != 1 {
 		t.Errorf("Expected 1 resource, got %d", len(f.Resources))
 	}
-	if err := f.Transform(InjectNamespace("foo")); err != nil{
+	if err := f.Transform(InjectNamespace("foo")); err != nil {
 		t.Error(err)
 	}
 	if len(f.Resources) != 1 {
