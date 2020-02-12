@@ -4,19 +4,12 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/go-logr/zapr"
+	"github.com/go-logr/logr/testing"
 	"github.com/manifestival/manifestival/patch"
-	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
-
-var log = zapr.NewLogger(zap.NewExample())
-
-func SetLogger(l logr.Logger) {
-	log = l.WithName("manifestival")
-}
 
 // Manifestival allows group application of a set of Kubernetes resources
 // (typically, a set of YAML files, aka a manifest) against a Kubernetes
@@ -41,6 +34,7 @@ type Manifestival interface {
 type Manifest struct {
 	Resources []unstructured.Unstructured
 	client    Client
+	log       logr.Logger
 }
 
 var _ Manifestival = &Manifest{}
@@ -49,13 +43,21 @@ var _ Manifestival = &Manifest{}
 // directories (and subdirectories if the `recursive` option is set). The
 // Manifest will be evaluated using the supplied `config` against a particular
 // Kubernetes apiserver.
-func NewManifest(pathname string, recursive bool, client Client) (Manifest, error) {
+func NewManifest(pathname string, opts ...option) (Manifest, error) {
+	o := &options{}
+	for _, opt := range opts {
+		opt(o)
+	}
+	log := o.logger
+	if log == nil {
+		log = testing.NullLogger{}
+	}
 	log.Info("Reading manifest", "name", pathname)
-	resources, err := Parse(pathname, recursive)
+	resources, err := Parse(pathname, o.recursive)
 	if err != nil {
 		return Manifest{}, err
 	}
-	return Manifest{Resources: resources, client: client}, nil
+	return Manifest{Resources: resources, client: o.client, log: log}, nil
 }
 
 // ApplyAll updates or creates all resources in the manifest.
@@ -77,7 +79,7 @@ func (f *Manifest) Apply(spec *unstructured.Unstructured, opts ...ClientOption) 
 	}
 	options := NewOptions(opts...)
 	if current == nil {
-		logResource("Creating", spec)
+		f.logResource("Creating", spec)
 		annotate(spec, v1.LastAppliedConfigAnnotation, patch.MakeLastAppliedConfig(spec))
 		annotate(spec, "manifestival", resourceCreated)
 		if err = f.client.Create(spec, options.ForCreate()); err != nil {
@@ -89,11 +91,11 @@ func (f *Manifest) Apply(spec *unstructured.Unstructured, opts ...ClientOption) 
 			return err
 		}
 		if patch.IsRequired() {
-			log.Info("Merging", "diff", patch)
+			f.log.Info("Merging", "diff", patch)
 			if err := patch.Merge(current); err != nil {
 				return err
 			}
-			logResource("Updating", current)
+			f.logResource("Updating", current)
 			if err = f.client.Update(current, options.ForUpdate()); err != nil {
 				return err
 			}
@@ -113,7 +115,7 @@ func (f *Manifest) DeleteAll(opts ...ClientOption) error {
 	for _, spec := range a {
 		if okToDelete(&spec) {
 			if err := f.Delete(&spec, opts...); err != nil {
-				log.Error(err, "Delete failed")
+				f.log.Error(err, "Delete failed")
 			}
 		}
 	}
@@ -127,7 +129,7 @@ func (f *Manifest) Delete(spec *unstructured.Unstructured, opts ...ClientOption)
 	if current == nil && err == nil {
 		return nil
 	}
-	logResource("Deleting", spec)
+	f.logResource("Deleting", spec)
 	options := NewOptions(opts...)
 	if err := f.client.Delete(spec, options.ForDelete()); err != nil {
 		// ignore GC race conditions triggered by owner references
@@ -152,9 +154,9 @@ func (f *Manifest) Get(spec *unstructured.Unstructured, opts ...ClientOption) (*
 	return result, err
 }
 
-func logResource(msg string, spec *unstructured.Unstructured) {
+func (f *Manifest) logResource(msg string, spec *unstructured.Unstructured) {
 	name := fmt.Sprintf("%s/%s", spec.GetNamespace(), spec.GetName())
-	log.Info(msg, "name", name, "type", spec.GroupVersionKind())
+	f.log.Info(msg, "name", name, "type", spec.GroupVersionKind())
 }
 
 func annotate(spec *unstructured.Unstructured, key string, value string) {
