@@ -6,15 +6,10 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
 	"github.com/manifestival/manifestival/patch"
-	"github.com/operator-framework/operator-sdk/pkg/restmapper"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/rest"
 )
 
 var log = zapr.NewLogger(zap.NewExample())
@@ -28,15 +23,15 @@ func SetLogger(l logr.Logger) {
 // apiserver.
 type Manifestival interface {
 	// Either updates or creates all resources in the manifest
-	ApplyAll() error
+	ApplyAll(opts ...ClientOption) error
 	// Updates or creates a particular resource
-	Apply(*unstructured.Unstructured) error
+	Apply(spec *unstructured.Unstructured, opts ...ClientOption) error
 	// Deletes all resources in the manifest
-	DeleteAll(opts *metav1.DeleteOptions) error
+	DeleteAll(opts ...ClientOption) error
 	// Deletes a particular resource
-	Delete(spec *unstructured.Unstructured, opts *metav1.DeleteOptions) error
+	Delete(spec *unstructured.Unstructured, opts ...ClientOption) error
 	// Returns a copy of the resource from the api server, nil if not found
-	Get(spec *unstructured.Unstructured) (*unstructured.Unstructured, error)
+	Get(spec *unstructured.Unstructured, opts ...ClientOption) (*unstructured.Unstructured, error)
 	// Transforms the resources within a Manifest
 	Transform(fns ...Transformer) (*Manifest, error)
 }
@@ -45,8 +40,7 @@ type Manifestival interface {
 // group using a Kubernetes client provided by `NewManifest`.
 type Manifest struct {
 	Resources []unstructured.Unstructured
-	client    dynamic.Interface
-	mapper    meta.RESTMapper
+	client    Client
 }
 
 var _ Manifestival = &Manifest{}
@@ -55,25 +49,17 @@ var _ Manifestival = &Manifest{}
 // directories (and subdirectories if the `recursive` option is set). The
 // Manifest will be evaluated using the supplied `config` against a particular
 // Kubernetes apiserver.
-func NewManifest(pathname string, recursive bool, config *rest.Config) (Manifest, error) {
+func NewManifest(pathname string, recursive bool, client Client) (Manifest, error) {
 	log.Info("Reading manifest", "name", pathname)
 	resources, err := Parse(pathname, recursive)
 	if err != nil {
 		return Manifest{}, err
 	}
-	client, err := dynamic.NewForConfig(config)
-	if err != nil {
-		return Manifest{Resources: resources}, err
-	}
-	mapper, err := restmapper.NewDynamicRESTMapper(config)
-	if err != nil {
-		return Manifest{Resources: resources}, err
-	}
-	return Manifest{Resources: resources, client: client, mapper: mapper}, nil
+	return Manifest{Resources: resources, client: client}, nil
 }
 
 // ApplyAll updates or creates all resources in the manifest.
-func (f *Manifest) ApplyAll() error {
+func (f *Manifest) ApplyAll(opts ...ClientOption) error {
 	for _, spec := range f.Resources {
 		if err := f.Apply(&spec); err != nil {
 			return err
@@ -84,20 +70,17 @@ func (f *Manifest) ApplyAll() error {
 
 // Apply updates or creates a particular resource, which does not need to be
 // part of `Resources`, and will not be tracked.
-func (f *Manifest) Apply(spec *unstructured.Unstructured) error {
-	current, err := f.Get(spec)
+func (f *Manifest) Apply(spec *unstructured.Unstructured, opts ...ClientOption) error {
+	current, err := f.Get(spec, opts...)
 	if err != nil {
 		return err
 	}
-	resource, err := f.ResourceInterface(spec)
-	if err != nil {
-		return err
-	}
+	options := NewOptions(opts...)
 	if current == nil {
 		logResource("Creating", spec)
 		annotate(spec, v1.LastAppliedConfigAnnotation, patch.MakeLastAppliedConfig(spec))
 		annotate(spec, "manifestival", resourceCreated)
-		if _, err = resource.Create(spec, metav1.CreateOptions{}); err != nil {
+		if err = f.client.Create(spec, options.ForCreate()); err != nil {
 			return err
 		}
 	} else {
@@ -111,7 +94,7 @@ func (f *Manifest) Apply(spec *unstructured.Unstructured) error {
 				return err
 			}
 			logResource("Updating", current)
-			if _, err = resource.Update(current, metav1.UpdateOptions{}); err != nil {
+			if err = f.client.Update(current, options.ForUpdate()); err != nil {
 				return err
 			}
 		}
@@ -120,7 +103,7 @@ func (f *Manifest) Apply(spec *unstructured.Unstructured) error {
 }
 
 // DeleteAll removes all tracked `Resources` in the Manifest.
-func (f *Manifest) DeleteAll(opts *metav1.DeleteOptions) error {
+func (f *Manifest) DeleteAll(opts ...ClientOption) error {
 	a := make([]unstructured.Unstructured, len(f.Resources))
 	copy(a, f.Resources)
 	// we want to delete in reverse order
@@ -129,7 +112,7 @@ func (f *Manifest) DeleteAll(opts *metav1.DeleteOptions) error {
 	}
 	for _, spec := range a {
 		if okToDelete(&spec) {
-			if err := f.Delete(&spec, opts); err != nil {
+			if err := f.Delete(&spec, opts...); err != nil {
 				log.Error(err, "Delete failed")
 			}
 		}
@@ -139,17 +122,14 @@ func (f *Manifest) DeleteAll(opts *metav1.DeleteOptions) error {
 
 // Delete removes the specified objects, which do not need to be registered as
 // `Resources` in the Manifest.
-func (f *Manifest) Delete(spec *unstructured.Unstructured, opts *metav1.DeleteOptions) error {
-	current, err := f.Get(spec)
+func (f *Manifest) Delete(spec *unstructured.Unstructured, opts ...ClientOption) error {
+	current, err := f.Get(spec, opts...)
 	if current == nil && err == nil {
 		return nil
 	}
 	logResource("Deleting", spec)
-	resource, err := f.ResourceInterface(spec)
-	if err != nil {
-		return err
-	}
-	if err := resource.Delete(spec.GetName(), opts); err != nil {
+	options := NewOptions(opts...)
+	if err := f.client.Delete(spec, options.ForDelete()); err != nil {
 		// ignore GC race conditions triggered by owner references
 		if !errors.IsNotFound(err) {
 			return err
@@ -160,12 +140,9 @@ func (f *Manifest) Delete(spec *unstructured.Unstructured, opts *metav1.DeleteOp
 
 // Get collects a full resource body (or `nil`) from a partial resource
 // supplied in `spec`.
-func (f *Manifest) Get(spec *unstructured.Unstructured) (*unstructured.Unstructured, error) {
-	resource, err := f.ResourceInterface(spec)
-	if err != nil {
-		return nil, err
-	}
-	result, err := resource.Get(spec.GetName(), metav1.GetOptions{})
+func (f *Manifest) Get(spec *unstructured.Unstructured, opts ...ClientOption) (*unstructured.Unstructured, error) {
+	options := NewOptions(opts...)
+	result, err := f.client.Get(spec, options.ForGet())
 	if err != nil {
 		result = nil
 		if errors.IsNotFound(err) {
@@ -173,19 +150,6 @@ func (f *Manifest) Get(spec *unstructured.Unstructured) (*unstructured.Unstructu
 		}
 	}
 	return result, err
-}
-
-// ResourceInterface returns an interface appropriate for the spec
-func (f *Manifest) ResourceInterface(spec *unstructured.Unstructured) (dynamic.ResourceInterface, error) {
-	gvk := spec.GroupVersionKind()
-	mapping, err := f.mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
-	if err != nil {
-		return nil, err
-	}
-	if mapping.Scope.Name() == meta.RESTScopeNameRoot {
-		return f.client.Resource(mapping.Resource), nil
-	}
-	return f.client.Resource(mapping.Resource).Namespace(spec.GetNamespace()), nil
 }
 
 func logResource(msg string, spec *unstructured.Unstructured) {
