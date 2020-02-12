@@ -6,11 +6,10 @@ import (
 
 	. "github.com/manifestival/manifestival"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/client-go/rest"
 )
 
 func TestTransform(t *testing.T) {
-	m, _ := NewManifest("testdata/tree", true, &rest.Config{})
+	m, _ := NewManifest("testdata/tree", true, nil)
 	f := &m
 	actual := f.Resources
 	if len(actual) != 5 {
@@ -38,7 +37,7 @@ func TestTransform(t *testing.T) {
 }
 
 func TestTransformCombo(t *testing.T) {
-	m, err := NewManifest("testdata/tree", true, &rest.Config{})
+	m, err := NewManifest("testdata/tree", true, nil)
 	f := &m
 	if len(f.Resources) != 5 {
 		t.Errorf("Failed to read all resources: %s", f.Resources)
@@ -76,7 +75,7 @@ func TestInjectNamespace(t *testing.T) {
 			t.Errorf("Expected '%s', got '%s'", expected, ns)
 		}
 	}
-	m, err := NewManifest("testdata/crb.yaml", true, &rest.Config{})
+	m, err := NewManifest("testdata/crb.yaml", true, nil)
 	f := &m
 	if len(f.Resources) != 2 {
 		t.Errorf("Expected 2 resources from crb.yaml, got %d (%s)", len(f.Resources), err)
@@ -109,7 +108,7 @@ func TestInjectNamespaceRoleBinding(t *testing.T) {
 			t.Errorf("Expected '%s', got '%s'", expected, ns)
 		}
 	}
-	m, err := NewManifest("testdata/rb.yaml", true, &rest.Config{})
+	m, err := NewManifest("testdata/rb.yaml", true, nil)
 	f := &m
 	if len(f.Resources) != 2 {
 		t.Errorf("Expected 2 resources from crb.yaml, got %d (%s)", len(f.Resources), err)
@@ -146,7 +145,7 @@ func TestInjectNamespaceWebhook(t *testing.T) {
 		}
 	}
 
-	m, err := NewManifest("testdata/hooks.yaml", true, &rest.Config{})
+	m, err := NewManifest("testdata/hooks.yaml", true, nil)
 	f := &m
 	if len(f.Resources) != 1 {
 		t.Errorf("Expected 1 resource, got %d", len(f.Resources))
@@ -176,7 +175,7 @@ func TestInjectNamespaceAPIService(t *testing.T) {
 		}
 	}
 
-	m, err := NewManifest("testdata/apiservice.yaml", true, &rest.Config{})
+	m, err := NewManifest("testdata/apiservice.yaml", true, nil)
 	f := &m
 	if len(f.Resources) != 1 {
 		t.Errorf("Expected 1 resource, got %d", len(f.Resources))

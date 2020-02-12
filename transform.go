@@ -35,7 +35,7 @@ func (f *Manifest) Transform(fns ...Transformer) (*Manifest, error) {
 		}
 		results = append(results, *spec)
 	}
-	return &Manifest{Resources: results, client: f.client, mapper: f.mapper}, nil
+	return &Manifest{Resources: results, client: f.client}, nil
 }
 
 // InjectNamespace creates a Transformer which adds a namespace to existing
