@@ -82,7 +82,7 @@ func (f *Manifest) Apply(spec *unstructured.Unstructured, opts ...ClientOption) 
 		f.logResource("Creating", spec)
 		annotate(spec, v1.LastAppliedConfigAnnotation, patch.MakeLastAppliedConfig(spec))
 		annotate(spec, "manifestival", resourceCreated)
-		if err = f.client.Create(spec, options.ForCreate()); err != nil {
+		if err = f.client.Create(spec.DeepCopy(), options.ForCreate()); err != nil {
 			return err
 		}
 	} else {

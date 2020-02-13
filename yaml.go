@@ -81,7 +81,7 @@ func readDir(pathname string, recursive bool) ([]unstructured.Unstructured, erro
 		name := path.Join(pathname, f.Name())
 		pathDirOrFile, err := os.Stat(name)
 		var els []unstructured.Unstructured
-		
+
 		if os.IsNotExist(err) || os.IsPermission(err) {
 			return aggregated, err
 		}
