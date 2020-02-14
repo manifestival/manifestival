@@ -7,12 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Introduced the `Source` interface, enabling the creation of a
+  Manifest from any source [#11](https://github.com/manifestival/manifestival/pull/11)
+- Added a `ManifestFrom` constructor to complement `NewManifest`,
+  which now only works for files, directories, and URL's
+- Use `ManifestFrom(Recursive("dirname/"))` to create a manifest from
+  a recursive directory search for yaml files.
+- Use `ManifestFrom(Slice(v))` to create a manifest from any `v` of type
+  `[]unstructured.Unstructured`
+- Use `ManifestFrom(Reader(r))` to create a manifest from any `r` of
+  type `io.Reader`
+
 ### Changed
 
-- Split `ClientOption` into `ApplyOption` and `DeleteOption` adding
-  `IgnoreNotFound` to the latter, ensuring that impls honor it,
-  simplifying delete logic for users calling the `Client` directly.
-  All `ApplyOptions` apply to both creates and updates [#12](https://github.com/manifestival/manifestival/pull/12)
+- Manifests created from a recursive directory search are now only
+  possible via the new `ManifestFrom` constructor. The `NewManifest`
+  constructor no longer supports a `recursive` option.
+- Moved the path/yaml parsing logic into its own `sources` to reduce
+  the exported names in the `manifestival` package.
+- Replaced the `ClientOption` type with `ApplyOption` and
+  `DeleteOption`, adding `IgnoreNotFound` to the latter, thereby
+  enabling `Client` implementations to honor it, simplifying delete
+  logic for users invoking the `Client` directly. All `ApplyOptions`
+  apply to both creates and updates
+  [#12](https://github.com/manifestival/manifestival/pull/12)
+
 
 ## [0.1.0] - 2019-02-17
 
@@ -33,6 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Other small fixes from the old `client-go` branch have also been
   merged 
 
+
 ## [0.0.0] - 2019-01-11
 
 ### Changed
@@ -42,6 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - There were no releases in the old repo, just two branches: `master`,
   based on the `controller-runtime` client API, and `client-go`, based
   on the `client-go` API. 
+
 
 [controller-runtime]: https://github.com/manifestival/controller-runtime-client
 [client-go]: https://github.com/manifestival/client-go-client
