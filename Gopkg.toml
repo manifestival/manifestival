@@ -28,14 +28,6 @@
   name = "k8s.io/apimachinery"
   version = "kubernetes-1.15.4"
 
-[[override]]
-  name = "k8s.io/api"
-  version = "kubernetes-1.15.4"
-  
-[[constraint]]
-  name = "sigs.k8s.io/controller-runtime"
-  version = "0.3.0"
-
 [prune]
   go-tests = true
   unused-packages = true
