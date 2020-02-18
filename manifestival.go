@@ -16,15 +16,15 @@ import (
 // apiserver.
 type Manifestival interface {
 	// Either updates or creates all resources in the manifest
-	ApplyAll(opts ...ClientOption) error
+	ApplyAll(opts ...ApplyOption) error
 	// Updates or creates a particular resource
-	Apply(spec *unstructured.Unstructured, opts ...ClientOption) error
+	Apply(spec *unstructured.Unstructured, opts ...ApplyOption) error
 	// Deletes all resources in the manifest
-	DeleteAll(opts ...ClientOption) error
+	DeleteAll(opts ...DeleteOption) error
 	// Deletes a particular resource
-	Delete(spec *unstructured.Unstructured, opts ...ClientOption) error
+	Delete(spec *unstructured.Unstructured, opts ...DeleteOption) error
 	// Returns a copy of the resource from the api server, nil if not found
-	Get(spec *unstructured.Unstructured, opts ...ClientOption) (*unstructured.Unstructured, error)
+	Get(spec *unstructured.Unstructured) (*unstructured.Unstructured, error)
 	// Transforms the resources within a Manifest
 	Transform(fns ...Transformer) (*Manifest, error)
 }
@@ -61,7 +61,7 @@ func NewManifest(pathname string, opts ...Option) (Manifest, error) {
 }
 
 // ApplyAll updates or creates all resources in the manifest.
-func (f *Manifest) ApplyAll(opts ...ClientOption) error {
+func (f *Manifest) ApplyAll(opts ...ApplyOption) error {
 	for _, spec := range f.Resources {
 		if err := f.Apply(&spec, opts...); err != nil {
 			return err
@@ -72,17 +72,16 @@ func (f *Manifest) ApplyAll(opts ...ClientOption) error {
 
 // Apply updates or creates a particular resource, which does not need to be
 // part of `Resources`, and will not be tracked.
-func (f *Manifest) Apply(spec *unstructured.Unstructured, opts ...ClientOption) error {
-	current, err := f.Get(spec, opts...)
+func (f *Manifest) Apply(spec *unstructured.Unstructured, opts ...ApplyOption) error {
+	current, err := f.Get(spec)
 	if err != nil {
 		return err
 	}
-	options := NewOptions(opts...)
 	if current == nil {
 		f.logResource("Creating", spec)
 		annotate(spec, v1.LastAppliedConfigAnnotation, patch.MakeLastAppliedConfig(spec))
 		annotate(spec, "manifestival", resourceCreated)
-		if err = f.client.Create(spec.DeepCopy(), options.ForCreate()); err != nil {
+		if err = f.client.Create(spec.DeepCopy(), opts...); err != nil {
 			return err
 		}
 	} else {
@@ -96,7 +95,7 @@ func (f *Manifest) Apply(spec *unstructured.Unstructured, opts ...ClientOption) 
 				return err
 			}
 			f.logResource("Updating", current)
-			if err = f.client.Update(current, options.ForUpdate()); err != nil {
+			if err = f.client.Update(current, opts...); err != nil {
 				return err
 			}
 		}
@@ -105,7 +104,7 @@ func (f *Manifest) Apply(spec *unstructured.Unstructured, opts ...ClientOption) 
 }
 
 // DeleteAll removes all tracked `Resources` in the Manifest.
-func (f *Manifest) DeleteAll(opts ...ClientOption) error {
+func (f *Manifest) DeleteAll(opts ...DeleteOption) error {
 	a := make([]unstructured.Unstructured, len(f.Resources))
 	copy(a, f.Resources)
 	// we want to delete in reverse order
@@ -124,27 +123,19 @@ func (f *Manifest) DeleteAll(opts ...ClientOption) error {
 
 // Delete removes the specified objects, which do not need to be registered as
 // `Resources` in the Manifest.
-func (f *Manifest) Delete(spec *unstructured.Unstructured, opts ...ClientOption) error {
-	current, err := f.Get(spec, opts...)
+func (f *Manifest) Delete(spec *unstructured.Unstructured, opts ...DeleteOption) error {
+	current, err := f.Get(spec)
 	if current == nil && err == nil {
 		return nil
 	}
 	f.logResource("Deleting", spec)
-	options := NewOptions(opts...)
-	if err := f.client.Delete(spec, options.ForDelete()); err != nil {
-		// ignore GC race conditions triggered by owner references
-		if !errors.IsNotFound(err) {
-			return err
-		}
-	}
-	return nil
+	return f.client.Delete(spec, opts...)
 }
 
 // Get collects a full resource body (or `nil`) from a partial resource
 // supplied in `spec`.
-func (f *Manifest) Get(spec *unstructured.Unstructured, opts ...ClientOption) (*unstructured.Unstructured, error) {
-	options := NewOptions(opts...)
-	result, err := f.client.Get(spec, options.ForGet())
+func (f *Manifest) Get(spec *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+	result, err := f.client.Get(spec)
 	if err != nil {
 		result = nil
 		if errors.IsNotFound(err) {

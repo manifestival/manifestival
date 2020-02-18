@@ -7,16 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Split `ClientOption` into `ApplyOption` and `DeleteOption` adding
+  `IgnoreNotFound` to the latter, ensuring that impls honor it,
+  simplifying delete logic for users calling the `Client` directly.
+  All `ApplyOptions` apply to both creates and updates [#12](https://github.com/manifestival/manifestival/pull/12)
+
 ## [0.1.0] - 2019-02-17
 
 ### Changed
 
 - Factored client API calls into a `Client` interface; implementations
   for [controller-runtime] and [client-go] reside in separate repos
-  within this org (#4)
+  within this org [#4](https://github.com/manifestival/manifestival/issues/4)
 - Introduced `Option` and `ClientOption` types, enabling golang's
   "functional options" pattern for both Manifest creation and `Client`
-  interface options, respectively (#6)
+  interface options, respectively [#6](https://github.com/manifestival/manifestival/issues/6)
 - Transforms are now immutable, a feature developed in the old
   `client-go` branch
 - Except for `ConfigMaps`, manifest resources are now applied using
