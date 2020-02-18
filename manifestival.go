@@ -39,25 +39,22 @@ type Manifest struct {
 
 var _ Manifestival = &Manifest{}
 
-// NewManifest creates a Manifest from a comma-separated set of yaml files or
-// directories (and subdirectories if the `recursive` option is set). The
-// Manifest will be evaluated using the supplied `config` against a particular
-// Kubernetes apiserver.
+// NewManifest creates a Manifest from a comma-separated set of yaml
+// files, directories, or URLs. The Manifest's client and logger may
+// be optionally provided.
 func NewManifest(pathname string, opts ...Option) (Manifest, error) {
-	o := &options{}
+	return ManifestFrom(Path(pathname), opts...)
+}
+
+// ManifestFrom creates a Manifest from any Source
+func ManifestFrom(src Source, opts ...Option) (m Manifest, err error) {
+	m = Manifest{log: testing.NullLogger{}}
 	for _, opt := range opts {
-		opt(o)
+		opt(&m)
 	}
-	log := o.logger
-	if log == nil {
-		log = testing.NullLogger{}
-	}
-	log.Info("Reading manifest", "name", pathname)
-	resources, err := Parse(pathname, o.recursive)
-	if err != nil {
-		return Manifest{}, err
-	}
-	return Manifest{Resources: resources, client: o.client, log: log}, nil
+	m.log.Info("Parsing manifest")
+	m.Resources, err = src.Parse()
+	return
 }
 
 // ApplyAll updates or creates all resources in the manifest.

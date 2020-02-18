@@ -9,7 +9,7 @@ import (
 )
 
 func TestTransform(t *testing.T) {
-	m, _ := NewManifest("testdata/tree", Recursive)
+	m, _ := ManifestFrom(Recursive("testdata/tree"))
 	f := &m
 	actual := f.Resources
 	if len(actual) != 5 {
@@ -37,7 +37,7 @@ func TestTransform(t *testing.T) {
 }
 
 func TestTransformCombo(t *testing.T) {
-	m, err := NewManifest("testdata/tree", UseRecursive(true))
+	m, err := ManifestFrom(Recursive("testdata/tree"))
 	f := &m
 	if len(f.Resources) != 5 {
 		t.Errorf("Failed to read all resources: %s", f.Resources)
@@ -75,7 +75,7 @@ func TestInjectNamespace(t *testing.T) {
 			t.Errorf("Expected '%s', got '%s'", expected, ns)
 		}
 	}
-	m, err := NewManifest("testdata/crb.yaml", UseRecursive(false))
+	m, err := NewManifest("testdata/crb.yaml")
 	f := &m
 	if len(f.Resources) != 2 {
 		t.Errorf("Expected 2 resources from crb.yaml, got %d (%s)", len(f.Resources), err)
