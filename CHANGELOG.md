@@ -22,6 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Removed the "convenience" functions from the `Manifestival`
+  interface and renamed `ApplyAll` and `DeleteAll` to `Apply` and
+  `Delete`, respectively. [#14](https://github.com/manifestival/manifestival/issues/14)
+- The `Manifest` struct's `Client` is now public, so the handy `Get`
+  and `Delete` functions formerly in the `Manifestival` interface can
+  now be invoked directly on any manifest's `Client` member.
 - Manifests created from a recursive directory search are now only
   possible via the new `ManifestFrom` constructor. The `NewManifest`
   constructor no longer supports a `recursive` option.

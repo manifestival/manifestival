@@ -12,6 +12,6 @@ func UseLogger(log logr.Logger) Option {
 
 func UseClient(client Client) Option {
 	return func(m *Manifest) {
-		m.client = client
+		m.Client = client
 	}
 }
