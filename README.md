@@ -4,91 +4,88 @@
 
 Manipulate unstructured Kubernetes resources loaded from a manifest.
 
-Manifestival helps building operators by providing mechanisms to create/apply/delete resources from manifests.
-That means, you can feed your YAML to manifestival in your operator similar to feeding your YAML to kubectl, but on runtime.
-
-Manifestival also provides transform functionality to shape your resources before pushing them to Kubernetes. 
+Manifestival is sort of like using `kubectl` from within your Go app.
+You can load a manifest of resources, optionally transform/filter
+them, and then apply/delete them to/from your k8s cluster.
 
 ## Usage
 
-Basic Usage
+### Client
 
-Create a manifest from YAML files in a directory:
-
-```go
-recursive  := True // or False
-restConfig := getMyClientGoRestConfig() 
-
-manifest, err := mf.NewManifest("/path/to/resources-dir", recursive, cfg)
-if err != nil {
-    log.Error(err, "Error creating the Manifest")
-    return
-}
-```
-
-Apply the resources in the manifest:
-
-```go 
-manifest.ApplyAll()
-
-```
-
-Iterate over the resources in the manifest, e.g. for post-checking for status of them:
-
-```go 
-for _, u := range manifest.Resources {
-    // u is of type unstructured.Unstructured of "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-    log.Print("Namespace", u.getNamespace(), "Kind", u.getKind(), "Name", u.GetName())
-    // ... do more things here
-}
-
-```
-
-Transform resources before applying them on Kubernetes:
-
-```go
-// custom transformer that prepends "my" to resources names
-func myTransformer(owner Owner) Transformer {
-	return func(u *unstructured.Unstructured) error {
-		u.setName("my" + u.getName())
-		return nil
-	}
-}
-
- 
-transforms := []manifestival.Transformer{
-    // example bundled transformers in manifestival package
-    manifestival.InjectOwner(ownerResource),
-    manifestival.InjectNamespace(myNamespace),
-    // example custom transformer
-    myTransformer
-}
-
-// transform the resources  
-manifest = manifest.Transform(transforms...)
-// then apply them
-manifest.ApplyAll()
-
-```
-
-
-
-Delete resources in the manifest from Kubernetes:
-
-```go
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-...
-manifest.DeleteAll(&metav1.DeleteOptions{})
-```
-
-
-This library isn't much use without a `Client` implementation. You
-have two choices:
+Manifests require a `Client` implementation to interact with your k8s
+API server. You have two choices:
 
 - [client-go](https://github.com/manifestival/client-go-client)
 - [controller-runtime](https://github.com/manifestival/controller-runtime-client)
 
+Once you have a client, create a manifest from some path to a YAML
+doc. This could be a path to file, directory, or URL. Other sources
+are supported, too.
+
+```go
+manifest, err := NewManifest("/path/to/file.yaml", UseClient(client))
+if err != nil {
+    panic("Failed to load manifest")
+}
+```
+
+It's the `Client` that enables you to persist the resources in your
+manifest using `Apply` and remove them using `Delete`. You can even
+invoke the manifest's `Client` directly.
+
+```go
+manifest.Apply()
+manifest.Filter(notCRDs).Delete()
+manifest.Client.Delete(manifest.Resources()[0])
+```
+
+Manifests are immutable once created, but you can create new instances
+using the `Filter` and `Transform` functions.
+
+### Filter
+
+There are a few built-in `Predicates` for `Filter`, and you can easily
+create your own. If you pass multiple, they're "AND'd" together, so
+only resources matching every predicate will be included in the
+returned manifest.
+
+```go
+m := manifest.Filter(ByLabel("foo", "bar"), ByGVK(gvk), NotCRDs)
+```
+
+### Transform
+
+`Transform` will apply some function to every resource in your
+manifest, so it's common for a `Transformer` function to include a
+guard that simply returns if the unstructured resource isn't of
+interest.
+
+There are a few handy built-in `Transformers` provided as well.
+
+```go
+func updateDeployment(resource *unstructured.Unstructured) error {
+    if resource.GetKind() != "Deployment" {
+        return nil
+    }
+    // Either manipulate the Unstructured resource directly or...
+    // convert it to a structured type...
+    var deployment = &appsv1.Deployment{}
+    if err := scheme.Scheme.Convert(resource, deployment, nil); err != nil {
+        return err
+    }
+
+    // Now update the deployment!
+    
+    // If necessary, convert it back
+    return scheme.Scheme.Convert(deployment, resource, nil)
+}
+
+m, err := manifest.Transform(updateDeployment, InjectOwner(parent), InjectNamespace("foo"))
+```
+
 ## Development
+
+You know the drill.
 
     dep ensure -v
     go test -v ./...
