@@ -22,20 +22,22 @@ type Owner interface {
 // `Resources` in this Manifest.  If an error occurs, no resources are
 // transformed.
 func (f *Manifest) Transform(fns ...Transformer) (*Manifest, error) {
-	result := *f
-	result.Resources = make([]unstructured.Unstructured, len(f.Resources))
-	for i, spec := range f.Resources {
-		result.Resources[i] = *spec.DeepCopy()
+	var results []unstructured.Unstructured
+	for i := 0; i < len(f.Resources); i++ {
+		spec := f.Resources[i].DeepCopy()
 		for _, transform := range fns {
 			if transform != nil {
-				err := transform(&result.Resources[i])
+				err := transform(spec)
 				if err != nil {
 					return nil, err
 				}
 			}
 		}
+		results = append(results, *spec)
 	}
-	return &result, nil
+	shallow := *f
+	shallow.Resources = results // deep-copied above!
+	return &shallow, nil
 }
 
 // InjectNamespace creates a Transformer which adds a namespace to existing
