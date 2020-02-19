@@ -18,7 +18,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
   type `io.Reader`
 - Introduced a new `Filter` function in the `Manifestival` interface
   that returns a subset of resources matching one or more `Predicates`
-- Convenient predicates provided: `NotCRDs`, `ByLabel`, and `ByGVK`
+- Convenient predicates provided: `ByKind`, `ByLabel`, `ByGVK`,
+  `Complement`, `JustCRDs`, and `NotCRDs`
 
 ### Changed
 

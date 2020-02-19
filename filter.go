@@ -29,19 +29,18 @@ NEXT_RESOURCE:
 	return &result
 }
 
-func Complement(p Predicate) Predicate {
-	return func(u *unstructured.Unstructured) bool {
-		return !p(u)
-	}
-}
-
 // JustCRDs returns only CustomResourceDefinitions
-func JustCRDs(u *unstructured.Unstructured) bool {
-	return u.GetKind() == "CustomResourceDefinition"
-}
+var JustCRDs = ByKind("CustomResourceDefinition")
 
 // NotCRDs returns no CustomResourceDefinitions
 var NotCRDs = Complement(JustCRDs)
+
+// ByKind returns resources matching a particular kind
+func ByKind(kind string) Predicate {
+	return func(u *unstructured.Unstructured) bool {
+		return u.GetKind() == kind
+	}
+}
 
 // ByLabel returns resources that contain a particular label and
 // value. A value of "" denotes *ANY* value
@@ -59,5 +58,12 @@ func ByLabel(label, value string) Predicate {
 func ByGVK(gvk schema.GroupVersionKind) Predicate {
 	return func(u *unstructured.Unstructured) bool {
 		return u.GroupVersionKind() == gvk
+	}
+}
+
+// Complement returns what another Predicate wouldn't
+func Complement(p Predicate) Predicate {
+	return func(u *unstructured.Unstructured) bool {
+		return !p(u)
 	}
 }
