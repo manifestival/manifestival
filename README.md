@@ -19,7 +19,7 @@ API server. You have two choices:
 - [controller-runtime](https://github.com/manifestival/controller-runtime-client)
 
 Once you have a client, create a manifest from some path to a YAML
-doc. This could be a path to file, directory, or URL. Other sources
+doc. This could be a path to a file, directory, or URL. Other sources
 are supported, too.
 
 ```go
@@ -35,7 +35,7 @@ invoke the manifest's `Client` directly.
 
 ```go
 manifest.Apply()
-manifest.Filter(notCRDs).Delete()
+manifest.Filter(NotCRDs).Delete()
 manifest.Client.Delete(manifest.Resources()[0])
 ```
 
