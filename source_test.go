@@ -46,7 +46,7 @@ spec:
 			}
 
 			foundApiVersions := make([]string, 0)
-			for _, r := range m.Resources {
+			for _, r := range m.Resources() {
 				foundApiVersions = append(foundApiVersions, r.GetAPIVersion())
 			}
 			if !reflect.DeepEqual(tc.expectedApiVersions, foundApiVersions) {

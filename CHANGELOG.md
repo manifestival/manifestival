@@ -1,9 +1,6 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
@@ -12,13 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Introduced the `Source` interface, enabling the creation of a
   Manifest from any source [#11](https://github.com/manifestival/manifestival/pull/11)
 - Added a `ManifestFrom` constructor to complement `NewManifest`,
-  which now only works for files, directories, and URL's
+  which now only works for paths to files, directories, and URL's
 - Use `ManifestFrom(Recursive("dirname/"))` to create a manifest from
   a recursive directory search for yaml files.
 - Use `ManifestFrom(Slice(v))` to create a manifest from any `v` of type
   `[]unstructured.Unstructured`
 - Use `ManifestFrom(Reader(r))` to create a manifest from any `r` of
   type `io.Reader`
+- Introduced a new `Filter` function in the `Manifestival` interface
+  that returns a subset of resources matching one or more `Predicates`
+- Convenient predicates provided: `NotCRDs`, `ByLabel`, and `ByGVK`
 
 ### Changed
 
@@ -31,14 +31,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Manifests created from a recursive directory search are now only
   possible via the new `ManifestFrom` constructor. The `NewManifest`
   constructor no longer supports a `recursive` option.
-- Moved the path/yaml parsing logic into its own `sources` to reduce
-  the exported names in the `manifestival` package.
+- Moved the path/yaml parsing logic into its own `sources` package to
+  reduce the exported names in the `manifestival` package.
 - Replaced the `ClientOption` type with `ApplyOption` and
   `DeleteOption`, adding `IgnoreNotFound` to the latter, thereby
   enabling `Client` implementations to honor it, simplifying delete
   logic for users invoking the `Client` directly. All `ApplyOptions`
   apply to both creates and updates
   [#12](https://github.com/manifestival/manifestival/pull/12)
+- The `Manifest` struct's `Resources` member is no longer public.
+  Instead, a `Manifest.Resources()` function is provided to return a
+  deep copy of the manifest's resources, if needed.
 
 
 ## [0.1.0] - 2019-02-17

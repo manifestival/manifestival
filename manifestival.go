@@ -21,12 +21,14 @@ type Manifestival interface {
 	Delete(opts ...DeleteOption) error
 	// Transforms the resources within a Manifest
 	Transform(fns ...Transformer) (*Manifest, error)
+	// Filters resources in a Manifest; Predicates are AND'd
+	Filter(fns ...Predicate) *Manifest
 }
 
 // Manifest tracks a set of concrete resources which should be managed as a
 // group using a Kubernetes client provided by `NewManifest`.
 type Manifest struct {
-	Resources []unstructured.Unstructured
+	resources []unstructured.Unstructured
 	Client    Client
 	log       logr.Logger
 }
@@ -47,13 +49,22 @@ func ManifestFrom(src Source, opts ...Option) (m Manifest, err error) {
 		opt(&m)
 	}
 	m.log.Info("Parsing manifest")
-	m.Resources, err = src.Parse()
+	m.resources, err = src.Parse()
 	return
+}
+
+// Resources returns a deep copy of the manifest resources
+func (f *Manifest) Resources() []unstructured.Unstructured {
+	result := make([]unstructured.Unstructured, len(f.resources))
+	for i, v := range f.resources {
+		result[i] = *v.DeepCopy()
+	}
+	return result
 }
 
 // Apply updates or creates all resources in the manifest.
 func (f *Manifest) Apply(opts ...ApplyOption) error {
-	for _, spec := range f.Resources {
+	for _, spec := range f.resources {
 		if err := f.apply(&spec, opts...); err != nil {
 			return err
 		}
@@ -96,8 +107,8 @@ func (f *Manifest) apply(spec *unstructured.Unstructured, opts ...ApplyOption) e
 
 // Delete removes all tracked `Resources` in the Manifest.
 func (f *Manifest) Delete(opts ...DeleteOption) error {
-	a := make([]unstructured.Unstructured, len(f.Resources))
-	copy(a, f.Resources)
+	a := make([]unstructured.Unstructured, len(f.resources))
+	copy(a, f.resources) // shallow copy is fine
 	// we want to delete in reverse order
 	for left, right := 0, len(a)-1; left < right; left, right = left+1, right-1 {
 		a[left], a[right] = a[right], a[left]
