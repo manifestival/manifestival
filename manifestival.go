@@ -16,15 +16,9 @@ import (
 // apiserver.
 type Manifestival interface {
 	// Either updates or creates all resources in the manifest
-	ApplyAll(opts ...ApplyOption) error
-	// Updates or creates a particular resource
-	Apply(spec *unstructured.Unstructured, opts ...ApplyOption) error
+	Apply(opts ...ApplyOption) error
 	// Deletes all resources in the manifest
-	DeleteAll(opts ...DeleteOption) error
-	// Deletes a particular resource
-	Delete(spec *unstructured.Unstructured, opts ...DeleteOption) error
-	// Returns a copy of the resource from the api server, nil if not found
-	Get(spec *unstructured.Unstructured) (*unstructured.Unstructured, error)
+	Delete(opts ...DeleteOption) error
 	// Transforms the resources within a Manifest
 	Transform(fns ...Transformer) (*Manifest, error)
 }
@@ -33,7 +27,7 @@ type Manifestival interface {
 // group using a Kubernetes client provided by `NewManifest`.
 type Manifest struct {
 	Resources []unstructured.Unstructured
-	client    Client
+	Client    Client
 	log       logr.Logger
 }
 
@@ -57,19 +51,19 @@ func ManifestFrom(src Source, opts ...Option) (m Manifest, err error) {
 	return
 }
 
-// ApplyAll updates or creates all resources in the manifest.
-func (f *Manifest) ApplyAll(opts ...ApplyOption) error {
+// Apply updates or creates all resources in the manifest.
+func (f *Manifest) Apply(opts ...ApplyOption) error {
 	for _, spec := range f.Resources {
-		if err := f.Apply(&spec, opts...); err != nil {
+		if err := f.apply(&spec, opts...); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// Apply updates or creates a particular resource, which does not need to be
+// apply updates or creates a particular resource, which does not need to be
 // part of `Resources`, and will not be tracked.
-func (f *Manifest) Apply(spec *unstructured.Unstructured, opts ...ApplyOption) error {
+func (f *Manifest) apply(spec *unstructured.Unstructured, opts ...ApplyOption) error {
 	current, err := f.Get(spec)
 	if err != nil {
 		return err
@@ -78,7 +72,7 @@ func (f *Manifest) Apply(spec *unstructured.Unstructured, opts ...ApplyOption) e
 		f.logResource("Creating", spec)
 		annotate(spec, v1.LastAppliedConfigAnnotation, patch.MakeLastAppliedConfig(spec))
 		annotate(spec, "manifestival", resourceCreated)
-		if err = f.client.Create(spec.DeepCopy(), opts...); err != nil {
+		if err = f.Client.Create(spec.DeepCopy(), opts...); err != nil {
 			return err
 		}
 	} else {
@@ -92,7 +86,7 @@ func (f *Manifest) Apply(spec *unstructured.Unstructured, opts ...ApplyOption) e
 				return err
 			}
 			f.logResource("Updating", current)
-			if err = f.client.Update(current, opts...); err != nil {
+			if err = f.Client.Update(current, opts...); err != nil {
 				return err
 			}
 		}
@@ -100,8 +94,8 @@ func (f *Manifest) Apply(spec *unstructured.Unstructured, opts ...ApplyOption) e
 	return nil
 }
 
-// DeleteAll removes all tracked `Resources` in the Manifest.
-func (f *Manifest) DeleteAll(opts ...DeleteOption) error {
+// Delete removes all tracked `Resources` in the Manifest.
+func (f *Manifest) Delete(opts ...DeleteOption) error {
 	a := make([]unstructured.Unstructured, len(f.Resources))
 	copy(a, f.Resources)
 	// we want to delete in reverse order
@@ -110,7 +104,7 @@ func (f *Manifest) DeleteAll(opts ...DeleteOption) error {
 	}
 	for _, spec := range a {
 		if okToDelete(&spec) {
-			if err := f.Delete(&spec, opts...); err != nil {
+			if err := f.delete(&spec, opts...); err != nil {
 				f.log.Error(err, "Delete failed")
 			}
 		}
@@ -118,21 +112,21 @@ func (f *Manifest) DeleteAll(opts ...DeleteOption) error {
 	return nil
 }
 
-// Delete removes the specified objects, which do not need to be registered as
+// delete removes the specified objects, which do not need to be registered as
 // `Resources` in the Manifest.
-func (f *Manifest) Delete(spec *unstructured.Unstructured, opts ...DeleteOption) error {
+func (f *Manifest) delete(spec *unstructured.Unstructured, opts ...DeleteOption) error {
 	current, err := f.Get(spec)
 	if current == nil && err == nil {
 		return nil
 	}
 	f.logResource("Deleting", spec)
-	return f.client.Delete(spec, opts...)
+	return f.Client.Delete(spec, opts...)
 }
 
 // Get collects a full resource body (or `nil`) from a partial resource
 // supplied in `spec`.
 func (f *Manifest) Get(spec *unstructured.Unstructured) (*unstructured.Unstructured, error) {
-	result, err := f.client.Get(spec)
+	result, err := f.Client.Get(spec)
 	if err != nil {
 		result = nil
 		if errors.IsNotFound(err) {
