@@ -13,9 +13,7 @@ func True(_ *unstructured.Unstructured) bool {
 	return true
 }
 
-func False(_ *unstructured.Unstructured) bool {
-	return false
-}
+var False = Complement(True)
 
 func TestFilter(t *testing.T) {
 	manifest, _ := NewManifest("testdata/knative-serving.yaml")
@@ -63,6 +61,14 @@ func TestFilter(t *testing.T) {
 		name:       "Without CRD's",
 		predicates: []Predicate{NotCRDs},
 		count:      45,
+	}, {
+		name:       "Only CRD's",
+		predicates: []Predicate{JustCRDs},
+		count:      10,
+	}, {
+		name:       "No CRD's",
+		predicates: []Predicate{NotCRDs, JustCRDs},
+		count:      0,
 	}}
 
 	for _, test := range tests {

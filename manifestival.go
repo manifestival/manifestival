@@ -75,7 +75,7 @@ func (f *Manifest) Apply(opts ...ApplyOption) error {
 // apply updates or creates a particular resource, which does not need to be
 // part of `Resources`, and will not be tracked.
 func (f *Manifest) apply(spec *unstructured.Unstructured, opts ...ApplyOption) error {
-	current, err := f.Get(spec)
+	current, err := f.get(spec)
 	if err != nil {
 		return err
 	}
@@ -126,7 +126,7 @@ func (f *Manifest) Delete(opts ...DeleteOption) error {
 // delete removes the specified objects, which do not need to be registered as
 // `Resources` in the Manifest.
 func (f *Manifest) delete(spec *unstructured.Unstructured, opts ...DeleteOption) error {
-	current, err := f.Get(spec)
+	current, err := f.get(spec)
 	if current == nil && err == nil {
 		return nil
 	}
@@ -134,9 +134,9 @@ func (f *Manifest) delete(spec *unstructured.Unstructured, opts ...DeleteOption)
 	return f.Client.Delete(spec, opts...)
 }
 
-// Get collects a full resource body (or `nil`) from a partial resource
+// get collects a full resource body (or `nil`) from a partial resource
 // supplied in `spec`.
-func (f *Manifest) Get(spec *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+func (f *Manifest) get(spec *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 	result, err := f.Client.Get(spec)
 	if err != nil {
 		result = nil

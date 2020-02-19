@@ -29,10 +29,19 @@ NEXT_RESOURCE:
 	return &result
 }
 
-// NotCRDs is a predicate that returns true only for non-CRD's
-func NotCRDs(u *unstructured.Unstructured) bool {
-	return !(u.GetKind() == "CustomResourceDefinition")
+func Complement(p Predicate) Predicate {
+	return func(u *unstructured.Unstructured) bool {
+		return !p(u)
+	}
 }
+
+// JustCRDs returns only CustomResourceDefinitions
+func JustCRDs(u *unstructured.Unstructured) bool {
+	return u.GetKind() == "CustomResourceDefinition"
+}
+
+// NotCRDs returns no CustomResourceDefinitions
+var NotCRDs = Complement(JustCRDs)
 
 // ByLabel returns resources that contain a particular label and
 // value. A value of "" denotes *ANY* value
