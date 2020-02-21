@@ -35,6 +35,13 @@ var JustCRDs = ByKind("CustomResourceDefinition")
 // NotCRDs returns no CustomResourceDefinitions
 var NotCRDs = Complement(JustCRDs)
 
+// ByName returns resources with a specifc name
+func ByName(name string) Predicate {
+	return func(u *unstructured.Unstructured) bool {
+		return u.GetName() == name
+	}
+}
+
 // ByKind returns resources matching a particular kind
 func ByKind(kind string) Predicate {
 	return func(u *unstructured.Unstructured) bool {

@@ -18,15 +18,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
   type `io.Reader`
 - Introduced a new `Filter` function in the `Manifestival` interface
   that returns a subset of resources matching one or more `Predicates`
-- Convenient predicates provided: `ByKind`, `ByLabel`, `ByGVK`,
-  `Complement`, `JustCRDs`, and `NotCRDs`
+- Convenient predicates provided: `ByName`, `ByKind`, `ByLabel`,
+  `ByGVK`, `Complement`, `JustCRDs`, and `NotCRDs`
 
 ### Removed
 
 - In order to support k8s versions <1.14, the code no longer
   references the `FieldManager` field of either `metav1.CreateOptions`
-  or `metav1.UpdateOptions`. This only affects `client-go` clients,
-  `controller-runtime` clients aren't affected. [#17](https://github.com/manifestival/manifestival/issues/17)
+  or `metav1.UpdateOptions`. This only affects `client-go` clients who
+  set `FieldManager` on their creates/updates; `controller-runtime`
+  clients aren't affected.
+  [#17](https://github.com/manifestival/manifestival/issues/17)
 
 ### Changed
 
@@ -41,18 +43,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
   constructor no longer supports a `recursive` option.
 - Moved the path/yaml parsing logic into its own `sources` package to
   reduce the exported names in the `manifestival` package.
-- Replaced the `ClientOption` type with `ApplyOption` and
-  `DeleteOption`, adding `IgnoreNotFound` to the latter, thereby
-  enabling `Client` implementations to honor it, simplifying delete
-  logic for users invoking the `Client` directly. All `ApplyOptions`
-  apply to both creates and updates
+- Split the `ClientOption` type into `ApplyOption` and `DeleteOption`,
+  adding `IgnoreNotFound` to the latter, thereby enabling `Client`
+  implementations to honor it, simplifying delete logic for users
+  invoking the `Client` directly. All `ApplyOptions` apply to both
+  creates and updates
   [#12](https://github.com/manifestival/manifestival/pull/12)
 - The `Manifest` struct's `Resources` member is no longer public.
   Instead, a `Manifest.Resources()` function is provided to return a
   deep copy of the manifest's resources, if needed.
 - `Transform` now returns a `Manifest` by value, like `Filter`. This
   is a stronger indicator of immutability and conveniently matches the
-  return type of `NewManifest` [#18](https://github.com/manifestival/manifestival/issues/18)
+  return type of `NewManifest`. [#18](https://github.com/manifestival/manifestival/issues/18)
+- The receiver types for the `Apply`, `Delete`, and `Resources`
+  methods on `Manifest` are now values, enabling convenient chaining
+  of calls involving `Filter`, for example. [#21](https://github.com/manifestival/manifestival/issues/21)
 
 
 ## [0.1.0] - 2019-02-17
