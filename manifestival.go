@@ -20,9 +20,9 @@ type Manifestival interface {
 	// Deletes all resources in the manifest
 	Delete(opts ...DeleteOption) error
 	// Transforms the resources within a Manifest
-	Transform(fns ...Transformer) (*Manifest, error)
+	Transform(fns ...Transformer) (Manifest, error)
 	// Filters resources in a Manifest; Predicates are AND'd
-	Filter(fns ...Predicate) *Manifest
+	Filter(fns ...Predicate) Manifest
 }
 
 // Manifest tracks a set of concrete resources which should be managed as a
