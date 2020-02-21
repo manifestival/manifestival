@@ -21,9 +21,9 @@ type Owner interface {
 // Transform applies an ordered set of Transformer functions to the
 // `Resources` in this Manifest.  If an error occurs, no resources are
 // transformed.
-func (f *Manifest) Transform(fns ...Transformer) (Manifest, error) {
-	result := *f
-	result.resources = f.Resources() // deep copies
+func (m Manifest) Transform(fns ...Transformer) (Manifest, error) {
+	result := m
+	result.resources = m.Resources() // deep copies
 	for _, spec := range result.resources {
 		for _, transform := range fns {
 			if transform != nil {

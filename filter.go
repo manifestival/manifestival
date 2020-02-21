@@ -12,11 +12,11 @@ type Predicate func(u *unstructured.Unstructured) bool
 // *all* Predicates return true. Any changes callers make to the
 // resources passed to their Predicate[s] will only be reflected in
 // the returned Manifest.
-func (f *Manifest) Filter(fns ...Predicate) Manifest {
-	result := *f
+func (m Manifest) Filter(fns ...Predicate) Manifest {
+	result := m
 	result.resources = []unstructured.Unstructured{}
 NEXT_RESOURCE:
-	for _, spec := range f.Resources() {
+	for _, spec := range m.Resources() {
 		for _, pred := range fns {
 			if pred != nil {
 				if !pred(&spec) {

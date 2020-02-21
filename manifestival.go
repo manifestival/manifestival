@@ -54,9 +54,9 @@ func ManifestFrom(src Source, opts ...Option) (m Manifest, err error) {
 }
 
 // Resources returns a deep copy of the manifest resources
-func (f *Manifest) Resources() []unstructured.Unstructured {
-	result := make([]unstructured.Unstructured, len(f.resources))
-	for i, v := range f.resources {
+func (m Manifest) Resources() []unstructured.Unstructured {
+	result := make([]unstructured.Unstructured, len(m.resources))
+	for i, v := range m.resources {
 		result[i] = *v.DeepCopy()
 	}
 	return result
