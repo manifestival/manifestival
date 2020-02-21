@@ -160,9 +160,10 @@
   version = "v2.2.8"
 
 [[projects]]
-  digest = "1:57858c910b7c29c64f742c34df7bc6ce76ea72e561276c80c0eda16980443736"
+  digest = "1:6cec2c64c7569cd43b9fa5f8973f3a82919ebed36296d19312de057e59651b05"
   name = "k8s.io/api"
   packages = [
+    "admissionregistration/v1alpha1",
     "admissionregistration/v1beta1",
     "apps/v1",
     "apps/v1beta1",
@@ -179,20 +180,15 @@
     "batch/v1beta1",
     "batch/v2alpha1",
     "certificates/v1beta1",
-    "coordination/v1",
     "coordination/v1beta1",
     "core/v1",
     "events/v1beta1",
     "extensions/v1beta1",
     "networking/v1",
-    "networking/v1beta1",
-    "node/v1alpha1",
-    "node/v1beta1",
     "policy/v1beta1",
     "rbac/v1",
     "rbac/v1alpha1",
     "rbac/v1beta1",
-    "scheduling/v1",
     "scheduling/v1alpha1",
     "scheduling/v1beta1",
     "settings/v1alpha1",
@@ -201,11 +197,11 @@
     "storage/v1beta1",
   ]
   pruneopts = "UT"
-  revision = "ef0cd3ac5f239dcd07b58dc7f6f0698d7aa74efd"
-  version = "v0.17.3"
+  revision = "5cb15d34447165a97c76ed5a60e4e99c8a01ecfe"
+  version = "kubernetes-1.13.4"
 
 [[projects]]
-  digest = "1:c6c83047f04c0a68d0b6f8c79450eb7eaf5a6473a68ea68ae1baa0a199687705"
+  digest = "1:fa3a3414a0792f783500126f3153407a19f791c6d81ccf10e82908d8af16ea07"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/errors",
@@ -244,16 +240,16 @@
     "third_party/forked/golang/reflect",
   ]
   pruneopts = "UT"
-  revision = "731dcecc205498f52a21b12e311af095efb4b188"
-  version = "v0.17.3"
+  revision = "86fb29eff6288413d76bd8506874fddd9fccdff0"
+  version = "kubernetes-1.13.4"
 
 [[projects]]
-  digest = "1:51c12c1a40d1eb166ef63470e0a3f15e6564d70aef537b978f8a7f09e227ef72"
+  digest = "1:b1bacdc9d7b76817e4652d5c91fc919f83ae9fd86e57885bc1dc79ec3b1c9a8f"
   name = "k8s.io/client-go"
   packages = ["kubernetes/scheme"]
   pruneopts = "UT"
-  revision = "78d2af792babf2dd937ba2e2a8d99c753a5eda89"
-  version = "v12.0.0"
+  revision = "e64494209f554a6723674bd494d69445fb76a1d4"
+  version = "v10.0.0"
 
 [[projects]]
   digest = "1:93e82f25d75aba18436ad1ac042cb49493f096011f2541075721ed6f9e05c044"

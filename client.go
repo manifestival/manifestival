@@ -65,9 +65,12 @@ func (dryRunAll) ApplyWith(opts *ApplyOptions) {
 	opts.ForUpdate.DryRun = []string{metav1.DryRunAll}
 }
 func (f FieldManager) ApplyWith(opts *ApplyOptions) {
-	fm := string(f)
-	opts.ForCreate.FieldManager = fm
-	opts.ForUpdate.FieldManager = fm
+	// TODO: The FM was introduced in k8s 1.14, but not ready to
+	// abandon pre-1.14 users yet. Uncomment when ready.
+
+	// fm := string(f)
+	// opts.ForCreate.FieldManager = fm
+	// opts.ForUpdate.FieldManager = fm
 }
 
 func (dryRunAll) DeleteWith(opts *DeleteOptions) {
