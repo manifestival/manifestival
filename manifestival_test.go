@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	logr "github.com/go-logr/logr/testing"
 	. "github.com/manifestival/manifestival"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -16,7 +17,7 @@ func TestManifestChaining(t *testing.T) {
 	const expected = 6
 	const kind = "Deployment"
 	const name = "controller"
-	manifest, _ := NewManifest("testdata/knative-serving.yaml", UseClient(testClient()))
+	manifest, _ := NewManifest("testdata/knative-serving.yaml", UseClient(testClient()), UseLogger(logr.TestLogger{T: t}))
 	// Filter->Transform->Resources
 	deployments, _ := manifest.Filter(ByKind(kind)).Transform(InjectNamespace("foo"))
 	if len(deployments.Resources()) != expected {
