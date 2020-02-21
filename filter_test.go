@@ -81,3 +81,21 @@ func TestFilter(t *testing.T) {
 		})
 	}
 }
+
+func TestFilterMutation(t *testing.T) {
+	m, _ := NewManifest("testdata/knative-serving.yaml")
+	bobs := m.Filter(func(u *unstructured.Unstructured) bool {
+		// This is an abuse of a Predicate, but allowed for those
+		// times you'd prefer not to deal with the multi-valued result
+		// of Transform
+		u.SetName("bob")
+		return true
+	})
+
+	if 0 != len(m.Filter(ByName("bob")).Resources()) {
+		t.Error("Even one bob is too many")
+	}
+	if 55 != len(bobs.Filter(ByName("bob")).Resources()) {
+		t.Error("Not every one is bob")
+	}
+}
