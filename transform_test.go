@@ -9,8 +9,7 @@ import (
 )
 
 func TestTransform(t *testing.T) {
-	m, _ := ManifestFrom(Recursive("testdata/tree"))
-	f := &m
+	f, _ := ManifestFrom(Recursive("testdata/tree"))
 	actual := f.Resources()
 	if len(actual) != 5 {
 		t.Errorf("Failed to read all resources: %s", actual)
@@ -37,8 +36,7 @@ func TestTransform(t *testing.T) {
 }
 
 func TestTransformCombo(t *testing.T) {
-	m, err := ManifestFrom(Recursive("testdata/tree"))
-	f := &m
+	f, err := ManifestFrom(Recursive("testdata/tree"))
 	if len(f.Resources()) != 5 {
 		t.Errorf("Failed to read all resources: %s", f.Resources())
 	}
@@ -75,8 +73,7 @@ func TestInjectNamespace(t *testing.T) {
 			t.Errorf("Expected '%s', got '%s'", expected, ns)
 		}
 	}
-	m, err := NewManifest("testdata/crb.yaml")
-	f := &m
+	f, err := NewManifest("testdata/crb.yaml")
 	if len(f.Resources()) != 2 {
 		t.Errorf("Expected 2 resources from crb.yaml, got %d (%s)", len(f.Resources()), err)
 	}
@@ -108,8 +105,7 @@ func TestInjectNamespaceRoleBinding(t *testing.T) {
 			t.Errorf("Expected '%s', got '%s'", expected, ns)
 		}
 	}
-	m, err := NewManifest("testdata/rb.yaml")
-	f := &m
+	f, err := NewManifest("testdata/rb.yaml")
 	if len(f.Resources()) != 2 {
 		t.Errorf("Expected 2 resources from crb.yaml, got %d (%s)", len(f.Resources()), err)
 	}
@@ -145,8 +141,7 @@ func TestInjectNamespaceWebhook(t *testing.T) {
 		}
 	}
 
-	m, err := NewManifest("testdata/hooks.yaml")
-	f := &m
+	f, err := NewManifest("testdata/hooks.yaml")
 	if len(f.Resources()) != 1 {
 		t.Errorf("Expected 1 resource, got %d", len(f.Resources()))
 	}
@@ -175,8 +170,7 @@ func TestInjectNamespaceAPIService(t *testing.T) {
 		}
 	}
 
-	m, err := NewManifest("testdata/apiservice.yaml")
-	f := &m
+	f, err := NewManifest("testdata/apiservice.yaml")
 	if len(f.Resources()) != 1 {
 		t.Errorf("Expected 1 resource, got %d", len(f.Resources()))
 	}

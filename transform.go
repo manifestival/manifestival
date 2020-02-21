@@ -21,7 +21,7 @@ type Owner interface {
 // Transform applies an ordered set of Transformer functions to the
 // `Resources` in this Manifest.  If an error occurs, no resources are
 // transformed.
-func (f *Manifest) Transform(fns ...Transformer) (*Manifest, error) {
+func (f *Manifest) Transform(fns ...Transformer) (Manifest, error) {
 	result := *f
 	result.resources = f.Resources() // deep copies
 	for _, spec := range result.resources {
@@ -29,12 +29,12 @@ func (f *Manifest) Transform(fns ...Transformer) (*Manifest, error) {
 			if transform != nil {
 				err := transform(&spec)
 				if err != nil {
-					return nil, err
+					return Manifest{}, err
 				}
 			}
 		}
 	}
-	return &result, nil
+	return result, nil
 }
 
 // InjectNamespace creates a Transformer which adds a namespace to existing

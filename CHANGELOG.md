@@ -50,6 +50,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - The `Manifest` struct's `Resources` member is no longer public.
   Instead, a `Manifest.Resources()` function is provided to return a
   deep copy of the manifest's resources, if needed.
+- `Transform` now returns a `Manifest` by value, like `Filter`. This
+  is a stronger indicator of immutability and conveniently matches the
+  return type of `NewManifest` [#18](https://github.com/manifestival/manifestival/issues/18)
 
 
 ## [0.1.0] - 2019-02-17

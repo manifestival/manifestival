@@ -12,7 +12,7 @@ type Predicate func(u *unstructured.Unstructured) bool
 // *all* Predicates return true. Any changes callers make to the
 // resources passed to their Predicate[s] will only be reflected in
 // the returned Manifest.
-func (f *Manifest) Filter(fns ...Predicate) *Manifest {
+func (f *Manifest) Filter(fns ...Predicate) Manifest {
 	result := *f
 	result.resources = []unstructured.Unstructured{}
 NEXT_RESOURCE:
@@ -26,7 +26,7 @@ NEXT_RESOURCE:
 		}
 		result.resources = append(result.resources, spec)
 	}
-	return &result
+	return result
 }
 
 // JustCRDs returns only CustomResourceDefinitions
