@@ -21,6 +21,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - Convenient predicates provided: `ByKind`, `ByLabel`, `ByGVK`,
   `Complement`, `JustCRDs`, and `NotCRDs`
 
+### Removed
+
+- In order to support k8s versions <1.14, the code no longer
+  references the `FieldManager` field of either `metav1.CreateOptions`
+  or `metav1.UpdateOptions`. This only affects `client-go` clients,
+  `controller-runtime` clients aren't affected. [#17](https://github.com/manifestival/manifestival/issues/17)
+
 ### Changed
 
 - Removed the "convenience" functions from the `Manifestival`
