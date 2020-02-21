@@ -63,9 +63,9 @@ func (m Manifest) Resources() []unstructured.Unstructured {
 }
 
 // Apply updates or creates all resources in the manifest.
-func (f *Manifest) Apply(opts ...ApplyOption) error {
-	for _, spec := range f.resources {
-		if err := f.apply(&spec, opts...); err != nil {
+func (m Manifest) Apply(opts ...ApplyOption) error {
+	for _, spec := range m.resources {
+		if err := m.apply(&spec, opts...); err != nil {
 			return err
 		}
 	}
@@ -74,16 +74,16 @@ func (f *Manifest) Apply(opts ...ApplyOption) error {
 
 // apply updates or creates a particular resource, which does not need to be
 // part of `Resources`, and will not be tracked.
-func (f *Manifest) apply(spec *unstructured.Unstructured, opts ...ApplyOption) error {
-	current, err := f.get(spec)
+func (m Manifest) apply(spec *unstructured.Unstructured, opts ...ApplyOption) error {
+	current, err := m.get(spec)
 	if err != nil {
 		return err
 	}
 	if current == nil {
-		f.logResource("Creating", spec)
+		m.logResource("Creating", spec)
 		annotate(spec, v1.LastAppliedConfigAnnotation, patch.MakeLastAppliedConfig(spec))
 		annotate(spec, "manifestival", resourceCreated)
-		if err = f.Client.Create(spec.DeepCopy(), opts...); err != nil {
+		if err = m.Client.Create(spec.DeepCopy(), opts...); err != nil {
 			return err
 		}
 	} else {
@@ -92,12 +92,12 @@ func (f *Manifest) apply(spec *unstructured.Unstructured, opts ...ApplyOption) e
 			return err
 		}
 		if patch.IsRequired() {
-			f.log.Info("Merging", "diff", patch)
+			m.log.Info("Merging", "diff", patch)
 			if err := patch.Merge(current); err != nil {
 				return err
 			}
-			f.logResource("Updating", current)
-			if err = f.Client.Update(current, opts...); err != nil {
+			m.logResource("Updating", current)
+			if err = m.Client.Update(current, opts...); err != nil {
 				return err
 			}
 		}
@@ -106,17 +106,17 @@ func (f *Manifest) apply(spec *unstructured.Unstructured, opts ...ApplyOption) e
 }
 
 // Delete removes all tracked `Resources` in the Manifest.
-func (f *Manifest) Delete(opts ...DeleteOption) error {
-	a := make([]unstructured.Unstructured, len(f.resources))
-	copy(a, f.resources) // shallow copy is fine
+func (m Manifest) Delete(opts ...DeleteOption) error {
+	a := make([]unstructured.Unstructured, len(m.resources))
+	copy(a, m.resources) // shallow copy is fine
 	// we want to delete in reverse order
 	for left, right := 0, len(a)-1; left < right; left, right = left+1, right-1 {
 		a[left], a[right] = a[right], a[left]
 	}
 	for _, spec := range a {
 		if okToDelete(&spec) {
-			if err := f.delete(&spec, opts...); err != nil {
-				f.log.Error(err, "Delete failed")
+			if err := m.delete(&spec, opts...); err != nil {
+				m.log.Error(err, "Delete failed")
 			}
 		}
 	}
@@ -125,19 +125,19 @@ func (f *Manifest) Delete(opts ...DeleteOption) error {
 
 // delete removes the specified objects, which do not need to be registered as
 // `Resources` in the Manifest.
-func (f *Manifest) delete(spec *unstructured.Unstructured, opts ...DeleteOption) error {
-	current, err := f.get(spec)
+func (m Manifest) delete(spec *unstructured.Unstructured, opts ...DeleteOption) error {
+	current, err := m.get(spec)
 	if current == nil && err == nil {
 		return nil
 	}
-	f.logResource("Deleting", spec)
-	return f.Client.Delete(spec, opts...)
+	m.logResource("Deleting", spec)
+	return m.Client.Delete(spec, opts...)
 }
 
 // get collects a full resource body (or `nil`) from a partial resource
 // supplied in `spec`.
-func (f *Manifest) get(spec *unstructured.Unstructured) (*unstructured.Unstructured, error) {
-	result, err := f.Client.Get(spec)
+func (m Manifest) get(spec *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+	result, err := m.Client.Get(spec)
 	if err != nil {
 		result = nil
 		if errors.IsNotFound(err) {
@@ -147,9 +147,9 @@ func (f *Manifest) get(spec *unstructured.Unstructured) (*unstructured.Unstructu
 	return result, err
 }
 
-func (f *Manifest) logResource(msg string, spec *unstructured.Unstructured) {
+func (m Manifest) logResource(msg string, spec *unstructured.Unstructured) {
 	name := fmt.Sprintf("%s/%s", spec.GetNamespace(), spec.GetName())
-	f.log.Info(msg, "name", name, "type", spec.GroupVersionKind())
+	m.log.Info(msg, "name", name, "type", spec.GroupVersionKind())
 }
 
 func annotate(spec *unstructured.Unstructured, key string, value string) {
