@@ -103,7 +103,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 [controller-runtime]: https://github.com/manifestival/controller-runtime-client
 [client-go]: https://github.com/manifestival/client-go-client
-[unreleased]: https://github.com/manifestival/manifestival/compare/v0.1.0...HEAD
+[unreleased]: https://github.com/manifestival/manifestival/compare/v0.2.0...HEAD
 [0.2.0]: https://github.com/manifestival/manifestival/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/manifestival/manifestival/compare/v0.0.0...v0.1.0
 [0.0.0]: https://github.com/manifestival/manifestival/releases/tag/v0.0.0
