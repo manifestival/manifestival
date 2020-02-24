@@ -13,119 +13,119 @@ import (
 )
 
 type Patch interface {
-	IsRequired() bool
-	Merge(*unstructured.Unstructured) error
+	Empty() bool
+	merge([]byte) ([]byte, error)
+	lastApplied() string
 }
 
-type jsonPatch struct {
+type jsonMergePatch struct {
 	patch  []byte
 	config string
 }
 
-type strategicPatch struct {
-	jsonPatch
+type strategicMergePatch struct {
+	jsonMergePatch
 	schema strategicpatch.LookupPatchMeta
 }
 
-func NewPatch(src, tgt *unstructured.Unstructured) (Patch, error) {
+// Attempts to create a 3-way strategic merge patch. Falls back to
+// rfc7386 if object's type isn't registered or if type is a ConfigMap.
+func New(src, tgt *unstructured.Unstructured) (result Patch, err error) {
 	var original, modified, current []byte
-	var err error
 	original = getLastAppliedConfig(tgt)
 	config := MakeLastAppliedConfig(src)
 	if modified, err = src.MarshalJSON(); err != nil {
-		return nil, err
+		return
 	}
 	if current, err = tgt.MarshalJSON(); err != nil {
-		return nil, err
+		return
 	}
 	obj, err := scheme.Scheme.New(src.GroupVersionKind())
 	switch {
 	case src.GetKind() == "ConfigMap":
 		fallthrough // force "overwrite" merge
 	case runtime.IsNotRegisteredError(err):
-		return createJsonPatch(original, modified, current, config)
+		return createJsonMergePatch(original, modified, current, config)
 	case err != nil:
-		return nil, err
+		return
 	default:
-		return createStrategicPatch(original, modified, current, obj, config)
+		return createStrategicMergePatch(original, modified, current, obj, config)
 	}
 }
 
-func createJsonPatch(original, modified, current []byte, config string) (*jsonPatch, error) {
-	patch, err := jsonmergepatch.CreateThreeWayJSONMergePatch(original, modified, current)
-	return &jsonPatch{patch, config}, err
+// Apply the patch to the resource
+func Apply(p Patch, obj *unstructured.Unstructured) (err error) {
+	var current, result []byte
+	if current, err = obj.MarshalJSON(); err != nil {
+		return
+	}
+	if result, err = p.merge(current); err != nil {
+		return
+	}
+	err = obj.UnmarshalJSON(result)
+	if err == nil {
+		setLastAppliedConfig(obj, p.lastApplied())
+	}
+	return
 }
 
-func createStrategicPatch(original, modified, current []byte, obj runtime.Object, config string) (*strategicPatch, error) {
+// MakeLastAppliedConfig for the resource
+func MakeLastAppliedConfig(obj *unstructured.Unstructured) string {
+	ann := obj.GetAnnotations()
+	if len(ann) > 0 {
+		delete(ann, v1.LastAppliedConfigAnnotation)
+		obj.SetAnnotations(ann)
+	}
+	bytes, _ := obj.MarshalJSON()
+	return string(bytes)
+}
+
+func createJsonMergePatch(original, modified, current []byte, config string) (Patch, error) {
+	patch, err := jsonmergepatch.CreateThreeWayJSONMergePatch(original, modified, current)
+	return &jsonMergePatch{patch, config}, err
+}
+
+func createStrategicMergePatch(original, modified, current []byte, obj runtime.Object, config string) (Patch, error) {
 	schema, err := strategicpatch.NewPatchMetaFromStruct(obj)
 	if err != nil {
 		return nil, err
 	}
 	patch, err := strategicpatch.CreateThreeWayMergePatch(original, modified, current, schema, true)
-	return &strategicPatch{jsonPatch{patch, config}, schema}, err
+	return &strategicMergePatch{jsonMergePatch{patch, config}, schema}, err
 }
 
-func (p *jsonPatch) String() string {
+var emptyDiff = []byte("{}")
+
+func (p *jsonMergePatch) Empty() bool {
+	return bytes.Equal(p.patch, emptyDiff)
+}
+func (p *jsonMergePatch) String() string {
 	return string(p.patch)
 }
-
-func (p *jsonPatch) IsRequired() bool {
-	return !bytes.Equal(p.patch, []byte("{}"))
+func (p *jsonMergePatch) lastApplied() string {
+	return p.config
+}
+func (p *jsonMergePatch) merge(obj []byte) ([]byte, error) {
+	return jsonpatch.MergePatch(obj, p.patch)
 }
 
-func (p *jsonPatch) Merge(spec *unstructured.Unstructured) (err error) {
-	var current, result []byte
-	if current, err = spec.MarshalJSON(); err != nil {
-		return
-	}
-	if result, err = jsonpatch.MergePatch(current, p.patch); err != nil {
-		return
-	}
-	err = spec.UnmarshalJSON(result)
-	if err == nil {
-		setLastAppliedConfig(spec, p.config)
-	}
-	return
+func (p *strategicMergePatch) merge(obj []byte) ([]byte, error) {
+	return strategicpatch.StrategicMergePatchUsingLookupPatchMeta(obj, p.patch, p.schema)
 }
 
-func (p *strategicPatch) Merge(spec *unstructured.Unstructured) (err error) {
-	var current, result []byte
-	if current, err = spec.MarshalJSON(); err != nil {
-		return
-	}
-	if result, err = strategicpatch.StrategicMergePatchUsingLookupPatchMeta(current, p.jsonPatch.patch, p.schema); err != nil {
-		return
-	}
-	err = spec.UnmarshalJSON(result)
-	if err == nil {
-		setLastAppliedConfig(spec, p.config)
-	}
-	return
-}
-
-func getLastAppliedConfig(spec *unstructured.Unstructured) []byte {
-	annotations := spec.GetAnnotations()
+func getLastAppliedConfig(obj *unstructured.Unstructured) []byte {
+	annotations := obj.GetAnnotations()
 	if annotations == nil {
 		return nil
 	}
 	return []byte(annotations[v1.LastAppliedConfigAnnotation])
 }
 
-func setLastAppliedConfig(spec *unstructured.Unstructured, config string) {
-	annotations := spec.GetAnnotations()
+func setLastAppliedConfig(obj *unstructured.Unstructured, config string) {
+	annotations := obj.GetAnnotations()
 	if annotations == nil {
 		annotations = map[string]string{}
 	}
 	annotations[v1.LastAppliedConfigAnnotation] = config
-	spec.SetAnnotations(annotations)
-}
-
-func MakeLastAppliedConfig(spec *unstructured.Unstructured) string {
-	ann := spec.GetAnnotations()
-	if len(ann) > 0 {
-		delete(ann, v1.LastAppliedConfigAnnotation)
-		spec.SetAnnotations(ann)
-	}
-	bytes, _ := spec.MarshalJSON()
-	return string(bytes)
+	obj.SetAnnotations(annotations)
 }

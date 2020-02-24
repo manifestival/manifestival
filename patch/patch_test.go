@@ -312,17 +312,17 @@ func TestPatching(t *testing.T) {
 			src := &unstructured.Unstructured{Object: test.Source}
 			tgt := &unstructured.Unstructured{Object: test.Target}
 
-			patch, err := NewPatch(src, tgt)
+			patch, err := New(src, tgt)
 			if err != nil {
 				t.Error(err)
 			}
 
-			if patch.IsRequired() != test.Changed {
-				t.Errorf("IsRequired() = %v, expect: %v", patch.IsRequired(), test.Changed)
+			if patch.Empty() == test.Changed {
+				t.Errorf("Empty() = %v, expect: %v", patch.Empty(), test.Changed)
 			}
 
-			if patch.IsRequired() {
-				patch.Merge(tgt)
+			if !patch.Empty() {
+				Apply(patch, tgt)
 				exp := &unstructured.Unstructured{Object: test.Expect}
 				x, _ := tgt.MarshalJSON()
 				y, _ := exp.MarshalJSON()

@@ -87,13 +87,13 @@ func (m Manifest) apply(spec *unstructured.Unstructured, opts ...ApplyOption) er
 			return err
 		}
 	} else {
-		patch, err := patch.NewPatch(spec, current)
+		diff, err := patch.New(spec, current)
 		if err != nil {
 			return err
 		}
-		if patch.IsRequired() {
-			m.log.Info("Merging", "diff", patch)
-			if err := patch.Merge(current); err != nil {
+		if !diff.Empty() {
+			m.log.Info("Merging", "diff", diff)
+			if err := patch.Apply(diff, current); err != nil {
 				return err
 			}
 			m.logResource("Updating", current)
