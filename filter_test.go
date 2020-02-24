@@ -13,7 +13,7 @@ func True(_ *unstructured.Unstructured) bool {
 	return true
 }
 
-var False = Complement(True)
+var False = None(True)
 
 func TestFilter(t *testing.T) {
 	manifest, _ := NewManifest("testdata/knative-serving.yaml")
@@ -54,20 +54,36 @@ func TestFilter(t *testing.T) {
 		predicates: []Predicate{False, False},
 		count:      0,
 	}, {
+		name:       "Any, first true then false",
+		predicates: []Predicate{Any(True, False)},
+		count:      55,
+	}, {
+		name:       "Any, first false then true",
+		predicates: []Predicate{Any(False, True)},
+		count:      55,
+	}, {
+		name:       "Any, both true",
+		predicates: []Predicate{Any(True, True)},
+		count:      55,
+	}, {
+		name:       "Any, both false",
+		predicates: []Predicate{Any(False, False)},
+		count:      0,
+	}, {
 		name:       "One match By GVK",
 		predicates: []Predicate{ByGVK(schema.GroupVersionKind{Kind: "Namespace", Version: "v1"})},
 		count:      1,
 	}, {
 		name:       "Without CRD's",
-		predicates: []Predicate{NotCRDs},
+		predicates: []Predicate{NoCRDs},
 		count:      45,
 	}, {
 		name:       "Only CRD's",
-		predicates: []Predicate{JustCRDs},
+		predicates: []Predicate{CRDs},
 		count:      10,
 	}, {
 		name:       "No CRD's",
-		predicates: []Predicate{NotCRDs, JustCRDs},
+		predicates: []Predicate{NoCRDs, CRDs},
 		count:      0,
 	}}
 

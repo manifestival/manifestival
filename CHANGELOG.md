@@ -7,9 +7,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Added
 
+- Added `All` and `Any` predicates, implementing `Filter` in terms of
+  the former
+
 ### Removed
 
 ### Changed
+
+- Renamed `Complement` to `None`, `JustCRDs` to `CRDs`, and `NotCRDs`
+  to `NoCRDs`.
 
 
 ## [0.2.0] - 2019-02-21
