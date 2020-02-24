@@ -7,10 +7,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Added
 
-- Added `All` and `Any` predicates, implementing `Filter` in terms of
-  the former
+- Introduced `All` and `Any` predicates, implementing `Filter` in
+  terms of the former
+- A new `ApplyOption` called `Strategic` defaults to true. Can be used
+  to force a [JSON Merge Patch] when applying a manifest [#23](https://github.com/manifestival/manifestival/issues/23)
 
 ### Removed
+
+- `ConfigMaps` are no longer handled specially when applying manifests
+  to existing resources resulting in a merge patch. Users can now call
+  `m.Filter(ByKind("ConfigMap")).Apply(Strategic(false))` to force a
+  [JSON Merge Patch] for `ConfigMap` updates [#23](https://github.com/manifestival/manifestival/issues/23)
 
 ### Changed
 
@@ -109,6 +116,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 [controller-runtime]: https://github.com/manifestival/controller-runtime-client
 [client-go]: https://github.com/manifestival/client-go-client
+[JSON Merge Patch]: https://tools.ietf.org/html/rfc7386
 [unreleased]: https://github.com/manifestival/manifestival/compare/v0.2.0...HEAD
 [0.2.0]: https://github.com/manifestival/manifestival/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/manifestival/manifestival/compare/v0.0.0...v0.1.0

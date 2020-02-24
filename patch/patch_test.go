@@ -312,11 +312,11 @@ func TestPatching(t *testing.T) {
 			src := &unstructured.Unstructured{Object: test.Source}
 			tgt := &unstructured.Unstructured{Object: test.Target}
 
-			patch, err := New(src, tgt)
+			patch, err := New(src, tgt, false)
 			if err != nil {
 				t.Error(err)
 			}
-
+			t.Log(patch)
 			if patch.Empty() == test.Changed {
 				t.Errorf("Empty() = %v, expect: %v", patch.Empty(), test.Changed)
 			}

@@ -87,7 +87,7 @@ func (m Manifest) apply(spec *unstructured.Unstructured, opts ...ApplyOption) er
 			return err
 		}
 	} else {
-		diff, err := patch.New(spec, current)
+		diff, err := patch.New(spec, current, !ApplyWith(opts).Strategic)
 		if err != nil {
 			return err
 		}

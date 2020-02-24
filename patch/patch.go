@@ -29,8 +29,8 @@ type strategicMergePatch struct {
 }
 
 // Attempts to create a 3-way strategic merge patch. Falls back to
-// rfc7386 if object's type isn't registered or if type is a ConfigMap.
-func New(src, tgt *unstructured.Unstructured) (result Patch, err error) {
+// RFC-7386 if object's type isn't registered or rfc7386 is true
+func New(src, tgt *unstructured.Unstructured, rfc7386 bool) (result Patch, err error) {
 	var original, modified, current []byte
 	original = getLastAppliedConfig(tgt)
 	config := MakeLastAppliedConfig(src)
@@ -42,8 +42,8 @@ func New(src, tgt *unstructured.Unstructured) (result Patch, err error) {
 	}
 	obj, err := scheme.Scheme.New(src.GroupVersionKind())
 	switch {
-	case src.GetKind() == "ConfigMap":
-		fallthrough // force "overwrite" merge
+	case rfc7386:
+		fallthrough // force "replace" merge for list types
 	case runtime.IsNotRegisteredError(err):
 		return createJsonMergePatch(original, modified, current, config)
 	case err != nil:
