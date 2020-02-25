@@ -2,12 +2,14 @@
 
 [![Build Status](https://travis-ci.org/manifestival/manifestival.svg?branch=master)](https://travis-ci.org/manifestival/manifestival)
 
-Manipulate unstructured Kubernetes resources loaded from a manifest.
+Manifestival is a library for manipulating a set of unstructured
+Kubernetes resources. Essentially, it enables you to toss a "bag of
+YAML" at a k8s cluster.
 
-Manifestival is sort of like using `kubectl` from within your Go app
-at runtime. You can load a manifest of resources, optionally
-transform/filter them, and then apply/delete them to/from your k8s
-cluster.
+It's sort of like embedding a simplified `kubectl` in your Go
+application. You can load a manifest of resources from a variety of
+sources, optionally transform/filter those resources, and then
+apply/delete them to/from your k8s cluster.
 
 See [CHANGELOG.md](CHANGELOG.md)
 
@@ -18,8 +20,8 @@ See [CHANGELOG.md](CHANGELOG.md)
 Manifests require a `Client` implementation to interact with your k8s
 API server. You have two choices:
 
-- [client-go](https://github.com/manifestival/client-go-client)
-- [controller-runtime](https://github.com/manifestival/controller-runtime-client)
+- <https://github.com/manifestival/client-go-client>
+- <https://github.com/manifestival/controller-runtime-client>
 
 Once you have a client, create a manifest from some path to a YAML
 doc. This could be a path to a file, directory, or URL. Other sources
