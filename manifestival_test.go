@@ -1,11 +1,14 @@
 package manifestival_test
 
 import (
+	"bytes"
 	"context"
+	"io"
 	"testing"
 
 	logr "github.com/go-logr/logr/testing"
 	. "github.com/manifestival/manifestival"
+
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -38,6 +41,64 @@ func TestManifestChaining(t *testing.T) {
 	}
 	if _, err := manifest.Client.Get(&u); !errors.IsNotFound(err) {
 		t.Error(err, "Expected controller deployment to be deleted")
+	}
+}
+
+func TestApply(t *testing.T) {
+	input := bytes.NewReader([]byte(`
+apiVersion: v1
+kind: ComponentStatus
+metadata:
+  name: test
+conditions:
+- type: foo
+  status: "True"
+`))
+	tests := []struct {
+		name     string
+		replace  bool
+		input    io.Reader
+		expected map[string]string
+	}{{
+		name:    "Merge patch",
+		replace: false,
+		input: bytes.NewReader([]byte(`
+apiVersion: v1
+kind: ComponentStatus
+metadata:
+  name: test
+conditions:
+- type: bar
+  status: "False"
+`)),
+		expected: map[string]string{"foo": "True", "bar": "False"},
+	}, {
+		name:    "Replace",
+		replace: true,
+		input: bytes.NewReader([]byte(`
+apiVersion: v1
+kind: ComponentStatus
+metadata:
+  name: test
+conditions:
+- type: bar
+  status: "False"
+`)),
+		expected: map[string]string{"bar": "False"},
+	}}
+	setup, _ := ManifestFrom(Reader(input))
+	original := setup.Resources()[0]
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			client := testClient(&original)
+			tgt, _ := ManifestFrom(Reader(test.input), UseClient(client))
+			tgt.Apply(Replace(test.replace))
+			obj, _ := tgt.Client.Get(&original)
+			actual, _, _ := unstructured.NestedSlice(obj.Object, "conditions")
+			if len(actual) != len(test.expected) {
+				t.Errorf("Nope! Expected %v, got %v", test.expected, actual)
+			}
+		})
 	}
 }
 

@@ -50,10 +50,6 @@ testCases:
         a: foo
     expect:
       kind: T
-      metadata:
-        annotations:
-          kubectl.kubernetes.io/last-applied-configuration: |
-            {"kind":"T","x":{"z":"i"}}
       x:
         z: i
         a: foo
@@ -69,10 +65,6 @@ testCases:
         z: j
     expect:
       kind: T
-      metadata:
-        annotations:
-          kubectl.kubernetes.io/last-applied-configuration: |
-            {"kind":"T","x":{"z":"i"}}
       x:
         z: i
   - name: change missing map entry
@@ -85,10 +77,6 @@ testCases:
       kind: T
     expect:
       kind: T
-      metadata:
-        annotations:
-          kubectl.kubernetes.io/last-applied-configuration: |
-            {"kind":"T","x":{"z":"i"}}
       x:
         z: i
   - name: identical nested slice
@@ -126,10 +114,6 @@ testCases:
           - i
     expect:
       kind: T
-      metadata:
-        annotations:
-          kubectl.kubernetes.io/last-applied-configuration: |
-            {"kind":"T","x":{"z":["i","j"]}}
       x:
         z:
           - i
@@ -152,10 +136,6 @@ testCases:
           - p
     expect:
       kind: T
-      metadata:
-        annotations:
-          kubectl.kubernetes.io/last-applied-configuration: |
-            {"kind":"T","x":{"z":["i","j","k"]}}
       x:
         z:
           - i
@@ -176,10 +156,6 @@ testCases:
           - j
     expect:
       kind: T
-      metadata:
-        annotations:
-          kubectl.kubernetes.io/last-applied-configuration: |
-            {"kind":"T","x":{"z":["i","j"]}}
       x:
         z:
           - i
@@ -201,10 +177,6 @@ testCases:
             one: "1"
     expect:
       kind: T
-      metadata:
-        annotations:
-          kubectl.kubernetes.io/last-applied-configuration: |
-            {"kind":"T","x":{"z":[{"foo":"bar"}]}}
       x:
         z:
           - foo: bar
@@ -259,11 +231,6 @@ testCases:
       kind: Deployment
       metadata:
         name: nginx-deployment # added by apply
-        annotations:
-          # The annotation contains the updated image to nginx 1.11.9,
-          # but does not contain the updated replicas to 2
-          kubectl.kubernetes.io/last-applied-configuration: |
-            {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"name":"nginx-deployment"},"spec":{"selector":{"matchLabels":{"app":"nginx"}},"template":{"metadata":{"labels":{"app":"nginx"}},"spec":{"containers":[{"image":"nginx:1.11.9","name":"nginx","ports":[{"containerPort":80}]}]}}}}
       spec:
         selector:
           matchLabels:
@@ -312,17 +279,15 @@ func TestPatching(t *testing.T) {
 			src := &unstructured.Unstructured{Object: test.Source}
 			tgt := &unstructured.Unstructured{Object: test.Target}
 
-			patch, err := NewPatch(src, tgt)
+			patch, err := New(src, tgt)
 			if err != nil {
 				t.Error(err)
 			}
-
-			if patch.IsRequired() != test.Changed {
-				t.Errorf("IsRequired() = %v, expect: %v", patch.IsRequired(), test.Changed)
+			if (patch == nil) == test.Changed {
+				t.Errorf("actual = %v, expect: %v", patch, test.Changed)
 			}
-
-			if patch.IsRequired() {
-				patch.Merge(tgt)
+			if patch != nil {
+				patch.Apply(tgt)
 				exp := &unstructured.Unstructured{Object: test.Expect}
 				x, _ := tgt.MarshalJSON()
 				y, _ := exp.MarshalJSON()

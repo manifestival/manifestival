@@ -7,10 +7,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Added
 
-- Added `All` and `Any` predicates, implementing `Filter` in terms of
-  the former
+- Introduced `All` and `Any` predicates, implementing `Filter` in
+  terms of the former
+- A new `ApplyOption` called `Replace` that defaults to false. Can be
+  used to force a replace update instead of a merge patch when
+  applying a manifest, e.g. `m.Apply(Replace(true))` or
+  `m.Apply(ForceReplace)` [#23](https://github.com/manifestival/manifestival/issues/23)
 
 ### Removed
+
+- `ConfigMaps` are no longer handled specially when applying manifests
 
 ### Changed
 
