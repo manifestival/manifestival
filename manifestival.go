@@ -81,13 +81,18 @@ func (m Manifest) apply(spec *unstructured.Unstructured, opts ...ApplyOption) er
 	}
 	if current == nil {
 		m.logResource("Creating", spec)
-		annotate(spec, v1.LastAppliedConfigAnnotation, patch.MakeLastAppliedConfig(spec))
-		annotate(spec, "manifestival", resourceCreated)
-		if err = m.Client.Create(spec.DeepCopy(), opts...); err != nil {
-			return err
-		}
+		current = spec.DeepCopy()
+		annotate(current, v1.LastAppliedConfigAnnotation, patch.MakeLastAppliedConfig(current))
+		annotate(current, "manifestival", resourceCreated)
+		return m.Client.Create(current, opts...)
 	} else {
-		diff, err := patch.New(spec, current, !ApplyWith(opts).Strategic)
+		if ApplyWith(opts).Replace {
+			m.logResource("Updating", spec)
+			current = spec.DeepCopy()
+			annotate(current, v1.LastAppliedConfigAnnotation, patch.MakeLastAppliedConfig(current))
+			return m.Client.Update(current, opts...)
+		}
+		diff, err := patch.New(spec, current)
 		if err != nil {
 			return err
 		}
@@ -97,9 +102,7 @@ func (m Manifest) apply(spec *unstructured.Unstructured, opts ...ApplyOption) er
 				return err
 			}
 			m.logResource("Updating", current)
-			if err = m.Client.Update(current, opts...); err != nil {
-				return err
-			}
+			return m.Client.Update(current, opts...)
 		}
 	}
 	return nil

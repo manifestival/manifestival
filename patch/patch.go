@@ -28,9 +28,9 @@ type strategicMergePatch struct {
 	schema strategicpatch.LookupPatchMeta
 }
 
-// Attempts to create a 3-way strategic merge patch. Falls back to
-// RFC-7386 if object's type isn't registered or rfc7386 is true
-func New(src, tgt *unstructured.Unstructured, rfc7386 bool) (result Patch, err error) {
+// Attempts to create a 3-way strategic JSON merge patch. Falls back
+// to RFC-7386 if object's type isn't registered
+func New(src, tgt *unstructured.Unstructured) (result Patch, err error) {
 	var original, modified, current []byte
 	original = getLastAppliedConfig(tgt)
 	config := MakeLastAppliedConfig(src)
@@ -42,8 +42,6 @@ func New(src, tgt *unstructured.Unstructured, rfc7386 bool) (result Patch, err e
 	}
 	obj, err := scheme.Scheme.New(src.GroupVersionKind())
 	switch {
-	case rfc7386:
-		fallthrough // force "replace" merge for list types
 	case runtime.IsNotRegisteredError(err):
 		return createJsonMergePatch(original, modified, current, config)
 	case err != nil:
