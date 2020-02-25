@@ -9,6 +9,8 @@ at runtime. You can load a manifest of resources, optionally
 transform/filter them, and then apply/delete them to/from your k8s
 cluster.
 
+See [CHANGELOG.md](CHANGELOG.md)
+
 ## Usage
 
 ### Client
