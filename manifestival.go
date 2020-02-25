@@ -82,30 +82,33 @@ func (m Manifest) apply(spec *unstructured.Unstructured, opts ...ApplyOption) er
 	if current == nil {
 		m.logResource("Creating", spec)
 		current = spec.DeepCopy()
-		annotate(current, v1.LastAppliedConfigAnnotation, patch.MakeLastAppliedConfig(current))
+		annotate(current, v1.LastAppliedConfigAnnotation, lastApplied(current))
 		annotate(current, "manifestival", resourceCreated)
 		return m.Client.Create(current, opts...)
 	} else {
 		if ApplyWith(opts).Replace {
-			m.logResource("Updating", spec)
-			current = spec.DeepCopy()
-			annotate(current, v1.LastAppliedConfigAnnotation, patch.MakeLastAppliedConfig(current))
-			return m.Client.Update(current, opts...)
+			return m.update(spec.DeepCopy(), opts...)
 		}
 		diff, err := patch.New(spec, current)
 		if err != nil {
 			return err
 		}
-		if !diff.Empty() {
+		if diff != nil {
 			m.log.Info("Merging", "diff", diff)
-			if err := patch.Apply(diff, current); err != nil {
+			if err := diff.Apply(current); err != nil {
 				return err
 			}
-			m.logResource("Updating", current)
-			return m.Client.Update(current, opts...)
+			return m.update(current, opts...)
 		}
 	}
 	return nil
+}
+
+// update a single resource
+func (m Manifest) update(obj *unstructured.Unstructured, opts ...ApplyOption) error {
+	m.logResource("Updating", obj)
+	annotate(obj, v1.LastAppliedConfigAnnotation, lastApplied(obj))
+	return m.Client.Update(obj, opts...)
 }
 
 // Delete removes all tracked `Resources` in the Manifest.
@@ -162,6 +165,17 @@ func annotate(spec *unstructured.Unstructured, key string, value string) {
 	}
 	annotations[key] = value
 	spec.SetAnnotations(annotations)
+}
+
+// makeLastAppliedConfig for the resource
+func lastApplied(obj *unstructured.Unstructured) string {
+	ann := obj.GetAnnotations()
+	if len(ann) > 0 {
+		delete(ann, v1.LastAppliedConfigAnnotation)
+		obj.SetAnnotations(ann)
+	}
+	bytes, _ := obj.MarshalJSON()
+	return string(bytes)
 }
 
 func okToDelete(spec *unstructured.Unstructured) bool {
