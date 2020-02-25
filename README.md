@@ -4,9 +4,10 @@
 
 Manipulate unstructured Kubernetes resources loaded from a manifest.
 
-Manifestival is sort of like using `kubectl` from within your Go app.
-You can load a manifest of resources, optionally transform/filter
-them, and then apply/delete them to/from your k8s cluster.
+Manifestival is sort of like using `kubectl` from within your Go app
+at runtime. You can load a manifest of resources, optionally
+transform/filter them, and then apply/delete them to/from your k8s
+cluster.
 
 ## Usage
 
@@ -35,8 +36,11 @@ invoke the manifest's `Client` directly.
 
 ```go
 manifest.Apply()
-manifest.Filter(NotCRDs).Delete()
-manifest.Client.Delete(manifest.Resources()[0])
+manifest.Filter(NoCRDs).Delete()
+
+u := manifest.Resources()[0]
+u.SetName("foo")
+manifest.Client.Create(&u)
 ```
 
 Manifests are immutable once created, but you can create new instances
@@ -50,8 +54,14 @@ only resources matching every predicate will be included in the
 returned manifest.
 
 ```go
-m := manifest.Filter(ByLabel("foo", "bar"), ByGVK(gvk), NotCRDs)
+m := manifest.Filter(ByLabel("foo", "bar"), ByGVK(gvk), NoCRDs)
 ```
+
+Because the `Predicate` receives the resource by reference, any
+changes you make to it will be reflected in the returned `Manifest`,
+but _not_ in the one being filtered. Since errors are not in the
+`Predicate` interface, you should limit changes to those that won't
+error. For more complex mutations, use `Transform` instead.
 
 ### Transform
 
@@ -76,7 +86,7 @@ func updateDeployment(resource *unstructured.Unstructured) error {
 
     // Now update the deployment!
     
-    // If necessary, convert it back
+    // If you converted it, convert it back, otherwise return nil
     return scheme.Scheme.Convert(deployment, resource, nil)
 }
 
