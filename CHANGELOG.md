@@ -5,11 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+### Changed
+
+- Bugfix: set LastAppliedConfigAnnotation correctly on updates
+  [#27](https://github.com/manifestival/manifestival/issues/27)
+
 ### Added
 
 ### Removed
-
-### Changed
 
 
 ## [0.3.0] - 2019-02-25
