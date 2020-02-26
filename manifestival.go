@@ -84,7 +84,7 @@ func (m Manifest) apply(spec *unstructured.Unstructured, opts ...ApplyOption) er
 		return m.Client.Create(current, opts...)
 	} else {
 		if ApplyWith(opts).Replace {
-			return m.update(spec.DeepCopy(), opts...)
+			return m.update(spec.DeepCopy(), lastApplied(spec), opts...)
 		}
 		diff, err := patch.New(spec, current)
 		if err != nil {
@@ -95,16 +95,16 @@ func (m Manifest) apply(spec *unstructured.Unstructured, opts ...ApplyOption) er
 			if err := diff.Apply(current); err != nil {
 				return err
 			}
-			return m.update(current, opts...)
+			return m.update(current, lastApplied(spec), opts...)
 		}
 	}
 	return nil
 }
 
 // update a single resource
-func (m Manifest) update(obj *unstructured.Unstructured, opts ...ApplyOption) error {
+func (m Manifest) update(obj *unstructured.Unstructured, config string, opts ...ApplyOption) error {
 	m.logResource("Updating", obj)
-	annotate(obj, v1.LastAppliedConfigAnnotation, lastApplied(obj))
+	annotate(obj, v1.LastAppliedConfigAnnotation, config)
 	return m.Client.Update(obj, opts...)
 }
 

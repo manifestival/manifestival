@@ -8,12 +8,42 @@ import (
 	logr "github.com/go-logr/logr/testing"
 	. "github.com/manifestival/manifestival"
 
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
+
+func TestLastAppliedAnnotation(t *testing.T) {
+	cm := v1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test",
+		},
+		Data: map[string]string{"foo": "bar"},
+	}
+	u := unstructured.Unstructured{}
+	scheme.Scheme.Convert(&cm, &u, nil)
+	ub, _ := u.MarshalJSON()
+	expected := string(ub)
+	// Seed the fake client with a different configmap
+	cm.Data["foo"] = "baz"
+	cm.Data["bizz"] = "buzz"
+	client := testClient(&cm)
+	// Use the unstructured for our manifest
+	m, _ := ManifestFrom(Slice([]unstructured.Unstructured{u}), UseClient(client))
+	if err := m.Apply(); err != nil {
+		t.Error(err)
+	}
+	x, _ := m.Client.Get(&u)
+	actual := x.GetAnnotations()[v1.LastAppliedConfigAnnotation]
+	if expected != actual {
+		t.Errorf("Expected %v, got %v", expected, actual)
+	}
+}
 
 func TestMethodChaining(t *testing.T) {
 	const expected = 6
