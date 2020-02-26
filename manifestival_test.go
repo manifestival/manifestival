@@ -3,7 +3,6 @@ package manifestival_test
 import (
 	"bytes"
 	"context"
-	"io"
 	"testing"
 
 	logr "github.com/go-logr/logr/testing"
@@ -16,7 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-func TestManifestChaining(t *testing.T) {
+func TestMethodChaining(t *testing.T) {
 	const expected = 6
 	const kind = "Deployment"
 	const name = "controller"
@@ -44,8 +43,8 @@ func TestManifestChaining(t *testing.T) {
 	}
 }
 
-func TestApply(t *testing.T) {
-	input := bytes.NewReader([]byte(`
+func TestReplaceApply(t *testing.T) {
+	current := bytes.NewReader([]byte(`
 apiVersion: v1
 kind: ComponentStatus
 metadata:
@@ -54,49 +53,39 @@ conditions:
 - type: foo
   status: "True"
 `))
+	config := bytes.NewReader([]byte(`
+apiVersion: v1
+kind: ComponentStatus
+metadata:
+  name: test
+conditions:
+- type: bar
+  status: "False"
+`))
 	tests := []struct {
 		name     string
 		replace  bool
-		input    io.Reader
-		expected map[string]string
+		expected int
 	}{{
-		name:    "Merge patch",
-		replace: false,
-		input: bytes.NewReader([]byte(`
-apiVersion: v1
-kind: ComponentStatus
-metadata:
-  name: test
-conditions:
-- type: bar
-  status: "False"
-`)),
-		expected: map[string]string{"foo": "True", "bar": "False"},
+		name:     "Merge patch",
+		replace:  false,
+		expected: 2,
 	}, {
-		name:    "Replace",
-		replace: true,
-		input: bytes.NewReader([]byte(`
-apiVersion: v1
-kind: ComponentStatus
-metadata:
-  name: test
-conditions:
-- type: bar
-  status: "False"
-`)),
-		expected: map[string]string{"bar": "False"},
+		name:     "Replace",
+		replace:  true,
+		expected: 1,
 	}}
-	setup, _ := ManifestFrom(Reader(input))
+	setup, _ := ManifestFrom(Reader(current))
 	original := setup.Resources()[0]
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			client := testClient(&original)
-			tgt, _ := ManifestFrom(Reader(test.input), UseClient(client))
+			tgt, _ := ManifestFrom(Reader(config), UseClient(client))
 			tgt.Apply(Replace(test.replace))
 			obj, _ := tgt.Client.Get(&original)
 			actual, _, _ := unstructured.NestedSlice(obj.Object, "conditions")
-			if len(actual) != len(test.expected) {
-				t.Errorf("Nope! Expected %v, got %v", test.expected, actual)
+			if len(actual) != test.expected {
+				t.Errorf("Nope! Expected %v, got %v", test.expected, len(actual))
 			}
 		})
 	}
