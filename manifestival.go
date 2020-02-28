@@ -22,6 +22,8 @@ type Manifestival interface {
 	Transform(fns ...Transformer) (Manifest, error)
 	// Filters resources in a Manifest; Predicates are AND'd
 	Filter(fns ...Predicate) Manifest
+	// Show the difference between the manifest and the cluster
+	Diff() ([]JSONMergePatch, error)
 }
 
 // Manifest tracks a set of concrete resources which should be managed as a

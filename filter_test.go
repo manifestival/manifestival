@@ -16,7 +16,7 @@ func True(_ *unstructured.Unstructured) bool {
 var False = None(True)
 
 func TestFilter(t *testing.T) {
-	manifest, _ := NewManifest("testdata/knative-serving.yaml")
+	manifest, _ := NewManifest("testdata/k-s-v0.12.1.yaml")
 	tests := []struct {
 		name       string
 		predicates []Predicate
@@ -99,7 +99,7 @@ func TestFilter(t *testing.T) {
 }
 
 func TestFilterMutation(t *testing.T) {
-	m, _ := NewManifest("testdata/knative-serving.yaml")
+	m, _ := NewManifest("testdata/k-s-v0.12.1.yaml")
 	bobs := m.Filter(func(u *unstructured.Unstructured) bool {
 		// This is an abuse of a Predicate, but allowed for those
 		// times you'd prefer not to deal with the multi-valued result

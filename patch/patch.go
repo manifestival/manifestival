@@ -92,3 +92,25 @@ func getLastAppliedConfig(obj *unstructured.Unstructured) []byte {
 	}
 	return []byte(annotations[v1.LastAppliedConfigAnnotation])
 }
+
+func TwoWay(src, tgt *unstructured.Unstructured, strategic bool) (_ []byte, err error) {
+	var original, modified []byte
+	if modified, err = tgt.MarshalJSON(); err != nil {
+		return
+	}
+	if src == nil {
+		return modified, nil
+	}
+	if original, err = src.MarshalJSON(); err != nil {
+		return
+	}
+	obj, err := scheme.Scheme.New(tgt.GroupVersionKind())
+	switch {
+	case !strategic || runtime.IsNotRegisteredError(err):
+		return jsonpatch.CreateMergePatch(original, modified)
+	case err != nil:
+		return nil, err
+	default:
+		return strategicpatch.CreateTwoWayMergePatch(original, modified, obj)
+	}
+}
