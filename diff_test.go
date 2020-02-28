@@ -12,7 +12,8 @@ func TestDiff(t *testing.T) {
 	old, _ := NewManifest("testdata/k-s-v0.11.0.yaml", UseClient(client))
 	old.Apply()
 	new, _ := NewManifest("testdata/k-s-v0.12.1.yaml", UseClient(client))
-	diffs, err := new.Filter(ignoreReleaseLabel(old)).Diff()
+	// Filter to omit version label noise
+	diffs, err := new.Filter(ignoreReleaseLabel(old)).Diff(false)
 	if err != nil {
 		t.Error(err)
 	}
@@ -20,7 +21,16 @@ func TestDiff(t *testing.T) {
 	if len(diffs) != expected {
 		t.Errorf("Expected %d diffs, got %d", expected, len(diffs))
 	}
-	// buf, _ := yaml.Marshal(diffs)
+	// Now do unfiltered
+	diffs, err = new.Diff(true)
+	if err != nil {
+		t.Error(err)
+	}
+	expected = len(old.Resources())
+	if len(diffs) != expected {
+		t.Errorf("Expected %d diffs, got %d", expected, len(diffs))
+	}
+	// buf, _ := json.MarshalIndent(diffs, "", "  ")
 	// fmt.Println(string(buf))
 }
 

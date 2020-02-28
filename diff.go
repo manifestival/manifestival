@@ -12,8 +12,8 @@ type JSONMergePatch map[string]interface{}
 
 // Diff returns a list of JSON Merge Patches [RFC 7386] that represent
 // the changes that will occur when the manifest is applied
-func (m Manifest) Diff() ([]JSONMergePatch, error) {
-	diffs, err := m.diff()
+func (m Manifest) Diff(strategic bool) ([]JSONMergePatch, error) {
+	diffs, err := m.diff(strategic)
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +27,7 @@ func (m Manifest) Diff() ([]JSONMergePatch, error) {
 }
 
 // diff loads the resources in the manifest and computes their difference
-func (m Manifest) diff() (result [][]byte, err error) {
+func (m Manifest) diff(strategic bool) (result [][]byte, err error) {
 	var original, modified *unstructured.Unstructured
 	var jmp []byte
 	var diff patch.Patch
@@ -35,7 +35,7 @@ func (m Manifest) diff() (result [][]byte, err error) {
 		if original, err = m.Client.Get(&spec); err != nil {
 			if errors.IsNotFound(err) {
 				// this resource will be created when applied
-				jmp, _ = patch.TwoWay(nil, &spec, false)
+				jmp, _ = patch.TwoWay(nil, &spec, strategic)
 				result = append(result, jmp)
 				continue
 			}
@@ -56,7 +56,7 @@ func (m Manifest) diff() (result [][]byte, err error) {
 		original.SetAPIVersion("")
 		original.SetKind("")
 		original.SetName("")
-		if jmp, err = patch.TwoWay(original, modified, false); err != nil {
+		if jmp, err = patch.TwoWay(original, modified, strategic); err != nil {
 			return
 		}
 		result = append(result, jmp)
