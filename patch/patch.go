@@ -13,7 +13,7 @@ import (
 )
 
 type Patch interface {
-	Apply(*unstructured.Unstructured) error
+	Merge(*unstructured.Unstructured) error
 }
 
 type mergePatch struct {
@@ -44,7 +44,7 @@ func New(src, tgt *unstructured.Unstructured) (_ Patch, err error) {
 }
 
 // Apply the patch to the resource
-func (p *mergePatch) Apply(obj *unstructured.Unstructured) (err error) {
+func (p *mergePatch) Merge(obj *unstructured.Unstructured) (err error) {
 	var current, result []byte
 	if current, err = obj.MarshalJSON(); err != nil {
 		return
@@ -93,6 +93,9 @@ func getLastAppliedConfig(obj *unstructured.Unstructured) []byte {
 	return []byte(annotations[v1.LastAppliedConfigAnnotation])
 }
 
+// TwoWay returns a 2-way merge patch instead of the 3-way returned by
+// New
+// TODO: Integrate this into the constructor as an option
 func TwoWay(src, tgt *unstructured.Unstructured, strategic bool) (_ []byte, err error) {
 	var original, modified []byte
 	if modified, err = tgt.MarshalJSON(); err != nil {

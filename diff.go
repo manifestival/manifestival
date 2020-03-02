@@ -5,7 +5,6 @@ import (
 
 	"github.com/manifestival/manifestival/patch"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 type JSONMergePatch map[string]interface{}
@@ -27,39 +26,40 @@ func (m Manifest) Diff(strategic bool) ([]JSONMergePatch, error) {
 }
 
 // diff loads the resources in the manifest and computes their difference
-func (m Manifest) diff(strategic bool) (result [][]byte, err error) {
-	var original, modified *unstructured.Unstructured
-	var jmp []byte
-	var diff patch.Patch
+func (m Manifest) diff(strategic bool) ([][]byte, error) {
+	result := make([][]byte, 0, len(m.resources))
 	for _, spec := range m.resources {
-		if original, err = m.Client.Get(&spec); err != nil {
+		original, err := m.Client.Get(&spec)
+		if err != nil {
 			if errors.IsNotFound(err) {
 				// this resource will be created when applied
-				jmp, _ = patch.TwoWay(nil, &spec, strategic)
+				jmp, _ := patch.TwoWay(nil, &spec, strategic)
 				result = append(result, jmp)
 				continue
 			}
-			return
+			return nil, err
 		}
-		modified = original.DeepCopy()
-		if diff, err = patch.New(&spec, modified); err != nil {
-			return
+		diff, err := patch.New(&spec, original)
+		if err != nil {
+			return nil, err
 		}
 		if diff == nil {
 			// ignore things that won't change
 			continue
 		}
-		if err = diff.Apply(modified); err != nil {
-			return
+		modified := original.DeepCopy()
+		if err := diff.Merge(modified); err != nil {
+			return nil, err
 		}
 		// Remove these fields so they'll be included in the patch
 		original.SetAPIVersion("")
 		original.SetKind("")
 		original.SetName("")
-		if jmp, err = patch.TwoWay(original, modified, strategic); err != nil {
-			return
+		jmp, err := patch.TwoWay(original, modified, strategic)
+		if err != nil {
+			return nil, err
 		}
 		result = append(result, jmp)
 	}
-	return
+	return result, nil
 }

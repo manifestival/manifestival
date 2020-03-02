@@ -287,7 +287,7 @@ func TestPatching(t *testing.T) {
 				t.Errorf("actual = %v, expect: %v", patch, test.Changed)
 			}
 			if patch != nil {
-				patch.Apply(tgt)
+				patch.Merge(tgt)
 				exp := &unstructured.Unstructured{Object: test.Expect}
 				x, _ := tgt.MarshalJSON()
 				y, _ := exp.MarshalJSON()

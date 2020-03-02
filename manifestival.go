@@ -113,7 +113,7 @@ func (m Manifest) apply(spec *unstructured.Unstructured, opts ...ApplyOption) er
 		}
 		if diff != nil {
 			m.log.Info("Merging", "diff", diff)
-			if err := diff.Apply(current); err != nil {
+			if err := diff.Merge(current); err != nil {
 				return err
 			}
 			return m.update(current, lastApplied(spec), opts...)
