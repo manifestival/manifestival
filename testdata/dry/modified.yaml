@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    serving.knative.dev/release: "v0.12.1"
+  name: controller
+  namespace: dry
+spec:
+  selector:
+    matchLabels:
+      app: controller
+  template:
+    metadata:
+      annotations:
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+      labels:
+        app: controller
+        serving.knative.dev/release: "v0.12.1"
+    spec:
+      containers:
+      - image: gcr.io/knative-releases/knative.dev/serving/cmd/controller@sha256:69a255299717c92757bfa7067889b449d1816c50e9b6cd709d06436418b9aa24
+        name: controller
+        workingDir: /foo
+      serviceAccountName: controller
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: autoscaler-hpa
+  namespace: dry
+spec:
+  ports:
+  - name: http-metrics
+    port: 9090
+    targetPort: 9090
+  selector:
+    app: autoscaler-hpa

@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dry
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    serving.knative.dev/release: "v0.11.0"
+  name: controller
+  namespace: dry
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: controller
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+      labels:
+        app: controller
+        serving.knative.dev/release: "v0.11.0"
+    spec:
+      containers:
+      - image: gcr.io/knative-releases/knative.dev/serving/cmd/controller@sha256:1fefee2a41f33969ba0e2f398afcf0e308a0397b6b7d65d4b3630ab3229f764c
+        name: controller
+        workingDir: /foo
+      serviceAccountName: controller

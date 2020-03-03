@@ -1,6 +1,9 @@
 package manifestival_test
 
 import (
+	"bytes"
+	"encoding/json"
+	"io/ioutil"
 	"testing"
 
 	. "github.com/manifestival/manifestival"
@@ -8,6 +11,23 @@ import (
 )
 
 func TestDryRun(t *testing.T) {
+	client := testClient()
+	current, _ := NewManifest("testdata/dry/current.yaml", UseClient(client))
+	current.Apply()
+	modified, _ := NewManifest("testdata/dry/modified.yaml", UseClient(client))
+	diffs, err := modified.DryRun()
+	if err != nil {
+		t.Error(err)
+	}
+	actual, _ := json.MarshalIndent(diffs, "", "  ")
+	expect, _ := ioutil.ReadFile("testdata/dry/expected.json")
+	expect = bytes.TrimSpace(expect)
+	if !bytes.Equal(actual, expect) {
+		t.Errorf("Wrong patch! Expected:\n%s\nGot:\n%s", string(expect), string(actual))
+	}
+}
+
+func TestKnativeUpgrade(t *testing.T) {
 	client := testClient()
 	old, _ := NewManifest("testdata/k-s-v0.11.0.yaml", UseClient(client))
 	old.Apply()
@@ -30,8 +50,6 @@ func TestDryRun(t *testing.T) {
 	if len(diffs) != expected {
 		t.Errorf("Expected %d diffs, got %d", expected, len(diffs))
 	}
-	// buf, _ := json.MarshalIndent(diffs, "", "  ")
-	// fmt.Println(string(buf))
 }
 
 func ignoreReleaseLabel(old Manifest) Predicate {
