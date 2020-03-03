@@ -7,13 +7,13 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-func TestDiff(t *testing.T) {
+func TestDryRun(t *testing.T) {
 	client := testClient()
 	old, _ := NewManifest("testdata/k-s-v0.11.0.yaml", UseClient(client))
 	old.Apply()
 	new, _ := NewManifest("testdata/k-s-v0.12.1.yaml", UseClient(client))
 	// Filter to omit version label noise
-	diffs, err := new.Filter(ignoreReleaseLabel(old)).Diff(false)
+	diffs, err := new.Filter(ignoreReleaseLabel(old)).DryRun()
 	if err != nil {
 		t.Error(err)
 	}
@@ -22,7 +22,7 @@ func TestDiff(t *testing.T) {
 		t.Errorf("Expected %d diffs, got %d", expected, len(diffs))
 	}
 	// Now do unfiltered
-	diffs, err = new.Diff(true)
+	diffs, err = new.DryRun()
 	if err != nil {
 		t.Error(err)
 	}

@@ -12,16 +12,17 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
-type JSONMergePatch map[string]interface{}
+type MergePatch map[string]interface{}
 
-// Diff returns a list of JSON Merge Patches [RFC 7386] that represent
-// the changes that will occur when the manifest is applied
-func (m Manifest) Diff(strategic bool) ([]JSONMergePatch, error) {
-	diffs, err := m.diff(strategic)
+// DryRun returns a list of merge patches, either strategic or
+// RFC-7386 for unregistered types, that show the effects of applying
+// the manifest.
+func (m Manifest) DryRun() ([]MergePatch, error) {
+	diffs, err := m.diff()
 	if err != nil {
 		return nil, err
 	}
-	result := make([]JSONMergePatch, len(diffs))
+	result := make([]MergePatch, len(diffs))
 	for i, bytes := range diffs {
 		if err := json.Unmarshal(bytes, &result[i]); err != nil {
 			return nil, err
@@ -31,7 +32,7 @@ func (m Manifest) Diff(strategic bool) ([]JSONMergePatch, error) {
 }
 
 // diff loads the resources in the manifest and computes their difference
-func (m Manifest) diff(strategic bool) ([][]byte, error) {
+func (m Manifest) diff() ([][]byte, error) {
 	result := make([][]byte, 0, len(m.resources))
 	for _, spec := range m.resources {
 		original, err := m.Client.Get(&spec)
@@ -60,7 +61,7 @@ func (m Manifest) diff(strategic bool) ([][]byte, error) {
 		original.SetAPIVersion("")
 		original.SetKind("")
 		original.SetName("")
-		jmp, err := mergePatch(original, modified, strategic)
+		jmp, err := mergePatch(original, modified)
 		if err != nil {
 			return nil, err
 		}
@@ -70,7 +71,7 @@ func (m Manifest) diff(strategic bool) ([][]byte, error) {
 }
 
 // mergePatch returns a 2-way merge patch
-func mergePatch(orig, mod *unstructured.Unstructured, strategic bool) (_ []byte, err error) {
+func mergePatch(orig, mod *unstructured.Unstructured) (_ []byte, err error) {
 	var original, modified []byte
 	if original, err = orig.MarshalJSON(); err != nil {
 		return
@@ -80,7 +81,7 @@ func mergePatch(orig, mod *unstructured.Unstructured, strategic bool) (_ []byte,
 	}
 	obj, err := scheme.Scheme.New(mod.GroupVersionKind())
 	switch {
-	case !strategic || runtime.IsNotRegisteredError(err):
+	case runtime.IsNotRegisteredError(err):
 		return jsonpatch.CreateMergePatch(original, modified)
 	case err != nil:
 		return nil, err
