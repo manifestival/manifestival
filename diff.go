@@ -3,8 +3,13 @@ package manifestival
 import (
 	"encoding/json"
 
+	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/manifestival/manifestival/patch"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
+	"k8s.io/client-go/kubernetes/scheme"
 )
 
 type JSONMergePatch map[string]interface{}
@@ -33,13 +38,13 @@ func (m Manifest) diff(strategic bool) ([][]byte, error) {
 		if err != nil {
 			if errors.IsNotFound(err) {
 				// this resource will be created when applied
-				jmp, _ := patch.TwoWay(nil, &spec, strategic)
+				jmp, _ := spec.MarshalJSON()
 				result = append(result, jmp)
 				continue
 			}
 			return nil, err
 		}
-		diff, err := patch.New(&spec, original)
+		diff, err := patch.New(original, &spec)
 		if err != nil {
 			return nil, err
 		}
@@ -55,11 +60,31 @@ func (m Manifest) diff(strategic bool) ([][]byte, error) {
 		original.SetAPIVersion("")
 		original.SetKind("")
 		original.SetName("")
-		jmp, err := patch.TwoWay(original, modified, strategic)
+		jmp, err := mergePatch(original, modified, strategic)
 		if err != nil {
 			return nil, err
 		}
 		result = append(result, jmp)
 	}
 	return result, nil
+}
+
+// mergePatch returns a 2-way merge patch
+func mergePatch(orig, mod *unstructured.Unstructured, strategic bool) (_ []byte, err error) {
+	var original, modified []byte
+	if original, err = orig.MarshalJSON(); err != nil {
+		return
+	}
+	if modified, err = mod.MarshalJSON(); err != nil {
+		return
+	}
+	obj, err := scheme.Scheme.New(mod.GroupVersionKind())
+	switch {
+	case !strategic || runtime.IsNotRegisteredError(err):
+		return jsonpatch.CreateMergePatch(original, modified)
+	case err != nil:
+		return nil, err
+	default:
+		return strategicpatch.CreateTwoWayMergePatch(original, modified, obj)
+	}
 }

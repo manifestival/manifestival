@@ -107,7 +107,7 @@ func (m Manifest) apply(spec *unstructured.Unstructured, opts ...ApplyOption) er
 		if ApplyWith(opts).Replace {
 			return m.update(spec.DeepCopy(), lastApplied(spec), opts...)
 		}
-		diff, err := patch.New(spec, current)
+		diff, err := patch.New(current, spec)
 		if err != nil {
 			return err
 		}

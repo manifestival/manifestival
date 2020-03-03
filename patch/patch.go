@@ -23,16 +23,16 @@ type mergePatch struct {
 
 // Attempts to create a 3-way strategic JSON merge patch. Falls back
 // to RFC-7386 if object's type isn't registered
-func New(src, tgt *unstructured.Unstructured) (_ Patch, err error) {
+func New(curr, mod *unstructured.Unstructured) (_ Patch, err error) {
 	var original, modified, current []byte
-	original = getLastAppliedConfig(tgt)
-	if modified, err = src.MarshalJSON(); err != nil {
+	original = getLastAppliedConfig(curr)
+	if modified, err = mod.MarshalJSON(); err != nil {
 		return
 	}
-	if current, err = tgt.MarshalJSON(); err != nil {
+	if current, err = curr.MarshalJSON(); err != nil {
 		return
 	}
-	obj, err := scheme.Scheme.New(src.GroupVersionKind())
+	obj, err := scheme.Scheme.New(mod.GroupVersionKind())
 	switch {
 	case runtime.IsNotRegisteredError(err):
 		return createJsonMergePatch(original, modified, current)
@@ -91,29 +91,4 @@ func getLastAppliedConfig(obj *unstructured.Unstructured) []byte {
 		return nil
 	}
 	return []byte(annotations[v1.LastAppliedConfigAnnotation])
-}
-
-// TwoWay returns a 2-way merge patch instead of the 3-way returned by
-// New
-// TODO: Integrate this into the constructor as an option
-func TwoWay(src, tgt *unstructured.Unstructured, strategic bool) (_ []byte, err error) {
-	var original, modified []byte
-	if modified, err = tgt.MarshalJSON(); err != nil {
-		return
-	}
-	if src == nil {
-		return modified, nil
-	}
-	if original, err = src.MarshalJSON(); err != nil {
-		return
-	}
-	obj, err := scheme.Scheme.New(tgt.GroupVersionKind())
-	switch {
-	case !strategic || runtime.IsNotRegisteredError(err):
-		return jsonpatch.CreateMergePatch(original, modified)
-	case err != nil:
-		return nil, err
-	default:
-		return strategicpatch.CreateTwoWayMergePatch(original, modified, obj)
-	}
 }
