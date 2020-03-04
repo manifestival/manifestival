@@ -15,22 +15,22 @@ type updateChangedTestCases struct {
 }
 
 type updateChangedTestCase struct {
-	Name    string
-	Changed bool
-	Source  map[string]interface{}
-	Target  map[string]interface{}
-	Expect  map[string]interface{}
+	Name     string
+	Changed  bool
+	Modified map[string]interface{}
+	Current  map[string]interface{}
+	Expect   map[string]interface{}
 }
 
 var testdata = []byte(`
 testCases:
   - name: identical maps
     changed: false
-    source:
+    modified:
       kind: T
       x:
         z: i
-    target:
+    current:
       kind: T
       x:
         z: i
@@ -40,11 +40,11 @@ testCases:
         z: i
   - name: add nested map entry
     changed: true
-    source:
+    modified:
       kind: T
       x:
         z: i
-    target:
+    current:
       kind: T
       x:
         a: foo
@@ -55,11 +55,11 @@ testCases:
         a: foo
   - name: change nested map entry
     changed: true
-    source:
+    modified:
       kind: T
       x:
         z: i
-    target:
+    current:
       kind: T
       x:
         z: j
@@ -69,11 +69,11 @@ testCases:
         z: i
   - name: change missing map entry
     changed: true
-    source:
+    modified:
       kind: T
       x:
         z: i
-    target:
+    current:
       kind: T
     expect:
       kind: T
@@ -81,13 +81,13 @@ testCases:
         z: i
   - name: identical nested slice
     changed: false
-    source:
+    modified:
       kind: T
       x:
         z:
           - i
           - j
-    target:
+    current:
       kind: T
       x:
         z:
@@ -101,13 +101,13 @@ testCases:
           - j
   - name: add nested slice entry
     changed: true
-    source:
+    modified:
       kind: T
       x:
         z:
           - i
           - j
-    target:
+    current:
       kind: T
       x:
         z:
@@ -120,14 +120,14 @@ testCases:
           - j
   - name: update nested slice entry
     changed: true
-    source:
+    modified:
       kind: T
       x:
         z:
           - i
           - j
           - k
-    target:
+    current:
       kind: T
       x:
         z:
@@ -143,13 +143,13 @@ testCases:
           - k
   - name: add missing slice entry
     changed: true
-    source:
+    modified:
       kind: T
       x:
         z:
           - i
           - j
-    target:
+    current:
       kind: T
       x:
         x:
@@ -164,12 +164,12 @@ testCases:
           - j
   - name: change map within list
     changed: true
-    source:
+    modified:
       kind: T
       x:
         z:
           - foo: bar
-    target:
+    current:
       kind: T
       x:
         z:
@@ -182,7 +182,7 @@ testCases:
           - foo: bar
   - name: strategic patch # https://kubernetes.io/docs/tasks/manage-kubernetes-objects/declarative-config/#merge-patch-calculation
     changed: true
-    source:
+    modified:
       apiVersion: apps/v1
       kind: Deployment
       metadata:
@@ -201,7 +201,7 @@ testCases:
               image: nginx:1.11.9 # update the image
               ports:
               - containerPort: 80
-    target:
+    current:
       apiVersion: apps/v1
       kind: Deployment
       metadata:
@@ -249,12 +249,12 @@ testCases:
               - containerPort: 80
   - name: identical strategic patch
     changed: false
-    source:
+    modified:
       apiVersion: apps/v1
       kind: Deployment
       metadata:
         name: nginx-deployment
-    target:
+    current:
       apiVersion: apps/v1
       kind: Deployment
       metadata:
@@ -275,11 +275,11 @@ func TestPatching(t *testing.T) {
 	}
 	for _, test := range tests.TestCases {
 		t.Run(test.Name, func(t *testing.T) {
-			// original := fmt.Sprintf("%+v", test.Target)
-			src := &unstructured.Unstructured{Object: test.Source}
-			tgt := &unstructured.Unstructured{Object: test.Target}
+			// original := fmt.Sprintf("%+v", test.Current)
+			mod := &unstructured.Unstructured{Object: test.Modified}
+			cur := &unstructured.Unstructured{Object: test.Current}
 
-			patch, err := New(src, tgt)
+			patch, err := New(cur, mod)
 			if err != nil {
 				t.Error(err)
 			}
@@ -287,9 +287,9 @@ func TestPatching(t *testing.T) {
 				t.Errorf("actual = %v, expect: %v", patch, test.Changed)
 			}
 			if patch != nil {
-				patch.Apply(tgt)
+				patch.Merge(cur)
 				exp := &unstructured.Unstructured{Object: test.Expect}
-				x, _ := tgt.MarshalJSON()
+				x, _ := cur.MarshalJSON()
 				y, _ := exp.MarshalJSON()
 				if !bytes.Equal(x, y) {
 					t.Errorf("\n     got %s\nexpected %s", string(x), string(y))

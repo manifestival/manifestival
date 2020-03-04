@@ -22,6 +22,8 @@ type Manifestival interface {
 	Transform(fns ...Transformer) (Manifest, error)
 	// Filters resources in a Manifest; Predicates are AND'd
 	Filter(fns ...Predicate) Manifest
+	// Show how applying the manifest would change the cluster
+	DryRun() ([]MergePatch, error)
 }
 
 // Manifest tracks a set of concrete resources which should be managed as a
@@ -105,13 +107,13 @@ func (m Manifest) apply(spec *unstructured.Unstructured, opts ...ApplyOption) er
 		if ApplyWith(opts).Replace {
 			return m.update(spec.DeepCopy(), lastApplied(spec), opts...)
 		}
-		diff, err := patch.New(spec, current)
+		diff, err := patch.New(current, spec)
 		if err != nil {
 			return err
 		}
 		if diff != nil {
 			m.log.Info("Merging", "diff", diff)
-			if err := diff.Apply(current); err != nil {
+			if err := diff.Merge(current); err != nil {
 				return err
 			}
 			return m.update(current, lastApplied(spec), opts...)
