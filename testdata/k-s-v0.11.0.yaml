@@ -28,10 +28,6 @@ rules:
   - watch
 
 ---
-
----
-
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -328,10 +324,6 @@ subjects:
 - kind: ServiceAccount
   name: controller
   namespace: knative-serving
-
----
-
----
 
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
@@ -1237,8 +1229,6 @@ metadata:
   namespace: knative-serving
 
 ---
-
----
 apiVersion: v1
 data:
   _example: |
@@ -1421,8 +1411,6 @@ metadata:
     serving.knative.dev/release: "v0.11.0"
   name: config-gc
   namespace: knative-serving
-
----
 
 ---
 apiVersion: v1
@@ -1821,12 +1809,6 @@ spec:
   versionPriority: 100
 
 ---
-
----
-
----
-
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -1881,12 +1863,6 @@ spec:
       serviceAccountName: controller
 
 ---
-
----
-
----
-
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -1909,24 +1885,6 @@ rules:
   - delete
   - patch
   - watch
-
----
-
----
-
----
-
----
-
----
-
----
-
----
-
----
-
----
 
 ---
 apiVersion: networking.istio.io/v1alpha3
@@ -1967,56 +1925,6 @@ spec:
       name: http
       number: 80
       protocol: HTTP
-
----
-
----
-
----
-
----
-
----
-
----
-
----
-
----
-
----
-
----
-
----
-
----
-
----
-
----
-
----
-
----
-
----
-
----
-
----
-
----
-
----
-
----
-
----
-
----
-
----
 
 ---
 apiVersion: v1
@@ -2080,20 +1988,6 @@ metadata:
   namespace: knative-serving
 
 ---
-
----
-
----
-
----
-
----
-
----
-
----
-
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -2144,9 +2038,3 @@ spec:
         securityContext:
           allowPrivilegeEscalation: false
       serviceAccountName: controller
-
----
-
----
-
----

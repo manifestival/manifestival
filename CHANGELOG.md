@@ -5,9 +5,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+### Added
+
+- New `DryRun` function shows how applying the manifest will change
+  the cluster. Its return value is a list of strategic merge patches
+  [#29](https://github.com/manifestival/manifestival/pull/29)
+
 ### Changed
 
-### Added
+- Reordered/renamed parameters in the `patch` package to be more
+  consistent with its upstream functions.
+- The `Patch` interface is now a struct
+- Renamed `Patch.Apply` to `Patch.Merge`
 
 ### Removed
 
