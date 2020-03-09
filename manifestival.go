@@ -72,8 +72,7 @@ func (m Manifest) Apply(opts ...ApplyOption) error {
 	return nil
 }
 
-// Delete removes all resources in the Manifest, silently ignoring
-// NotFound errors by default
+// Delete removes all resources in the Manifest
 func (m Manifest) Delete(opts ...DeleteOption) error {
 	a := make([]unstructured.Unstructured, len(m.resources))
 	copy(a, m.resources) // shallow copy is fine
@@ -84,7 +83,7 @@ func (m Manifest) Delete(opts ...DeleteOption) error {
 	for _, spec := range a {
 		if okToDelete(&spec) {
 			if err := m.delete(&spec, opts...); err != nil {
-				m.log.Error(err, "Delete failed")
+				return err
 			}
 		}
 	}

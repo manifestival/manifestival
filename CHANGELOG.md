@@ -17,6 +17,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
   consistent with its upstream functions.
 - The `Patch` interface is now a struct
 - Renamed `Patch.Apply` to `Patch.Merge`
+- `Delete` may now return the errors that it was previously only
+  logging. It will still ignore `NotFound` errors when the
+  `IgnoreNotFound` option is true, of course.
 
 ### Removed
 
