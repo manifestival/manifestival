@@ -38,11 +38,11 @@ func TestFilter(t *testing.T) {
 		predicates: []Predicate{ByLabel("serving.knative.dev/release", "v0.12.1")},
 		count:      54,
 	}, {
-		name:       "Resources matche for the one label",
+		name:       "Resources match for one label",
 		predicates: []Predicate{ByLabels(map[string]string{"networking.knative.dev/ingress-provider": "istio"})},
 		count:      5,
 	}, {
-		name:       "Resources matche for the one labels",
+		name:       "Resources match for any of the labels",
 		predicates: []Predicate{ByLabels(map[string]string{"networking.knative.dev/ingress-provider": "istio", "autoscaling.knative.dev/metric-provider": "custom-metrics"})},
 		count:      10,
 	}, {
