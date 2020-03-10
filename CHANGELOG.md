@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - New `DryRun` function shows how applying the manifest will change
   the cluster. Its return value is a list of strategic merge patches
   [#29](https://github.com/manifestival/manifestival/pull/29)
+- New `ByLabels` function which is similar to ByLabel, but it accepts
+  multiple labels by map. It filter the resource that matches for any
+  of the labels.
+  [#32](https://github.com/manifestival/manifestival/pull/32)
 
 ### Changed
 
