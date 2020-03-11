@@ -5,6 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+### Changed
+
+### Added
+
+### Removed
+
+
+## [0.4.0] - 2019-03-11
+
 ### Added
 
 - New `DryRun` function shows how applying the manifest will change
@@ -25,8 +34,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
   `IgnoreNotFound` option is true, of course.
 - Fixed bug when transformers use `scheme.Scheme.Convert` to
   manipulate resources [#33](https://github.com/manifestival/manifestival/pull/33)
-
-### Removed
 
 
 ## [0.3.1] - 2019-02-26
@@ -149,7 +156,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 [controller-runtime]: https://github.com/manifestival/controller-runtime-client
 [client-go]: https://github.com/manifestival/client-go-client
-[unreleased]: https://github.com/manifestival/manifestival/compare/v0.3.1...HEAD
+[unreleased]: https://github.com/manifestival/manifestival/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/manifestival/manifestival/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/manifestival/manifestival/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/manifestival/manifestival/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/manifestival/manifestival/compare/v0.1.0...v0.2.0
