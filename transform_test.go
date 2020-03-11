@@ -5,7 +5,9 @@ import (
 	"testing"
 
 	. "github.com/manifestival/manifestival"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/client-go/kubernetes/scheme"
 )
 
 func TestTransform(t *testing.T) {
@@ -186,4 +188,32 @@ func TestInjectNamespaceAPIService(t *testing.T) {
 		t.Error(err)
 	}
 	assert(f.Resources()[0], "food")
+}
+
+func TestConvertTransform(t *testing.T) {
+	manifest, _ := NewManifest("testdata/k-s-v0.12.1.yaml")
+	transformer := func(u *unstructured.Unstructured) error {
+		if u.GetKind() == "ConfigMap" {
+			cm := &v1.ConfigMap{}
+			if err := scheme.Scheme.Convert(u, cm, nil); err != nil {
+				return err
+			}
+			cm.Data["foo"] = "bar"
+			return scheme.Scheme.Convert(cm, u, nil)
+		}
+		return nil
+	}
+	actual, err := manifest.Transform(transformer)
+	if err != nil {
+		t.Error(err)
+	}
+	for _, u := range actual.Filter(ByKind("ConfigMap")).Resources() {
+		cm := &v1.ConfigMap{}
+		if err := scheme.Scheme.Convert(&u, cm, nil); err != nil {
+			t.Error(err)
+		}
+		if cm.Data["foo"] != "bar" {
+			t.Error("Data not there")
+		}
+	}
 }

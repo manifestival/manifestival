@@ -23,6 +23,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - `Delete` may now return the errors that it was previously only
   logging. It will still ignore `NotFound` errors when the
   `IgnoreNotFound` option is true, of course.
+- Fixed bug when transformers use `scheme.Scheme.Convert` to
+  manipulate resources [#33](https://github.com/manifestival/manifestival/pull/33)
 
 ### Removed
 
