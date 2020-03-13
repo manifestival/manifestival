@@ -27,6 +27,19 @@ func TestDryRun(t *testing.T) {
 	}
 }
 
+func TestNothingChanged(t *testing.T) {
+	client := testClient()
+	current, _ := NewManifest("testdata/dry/current.yaml", UseClient(client))
+	current.Apply()
+	diffs, err := current.DryRun()
+	if err != nil {
+		t.Error(err)
+	}
+	if len(diffs) > 0 {
+		t.Errorf("Nothing should've changed!")
+	}
+}
+
 func TestKnativeUpgrade(t *testing.T) {
 	client := testClient()
 	old, _ := NewManifest("testdata/k-s-v0.11.0.yaml", UseClient(client))
