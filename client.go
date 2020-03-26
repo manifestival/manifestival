@@ -53,7 +53,7 @@ type DeleteOptions struct {
 }
 
 var DryRunAll = dryRunAll{}
-var ForceReplace = Replace(true)
+var Overwrite = Replace(true)
 
 type FieldManager string
 type GracePeriodSeconds int64
