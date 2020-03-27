@@ -45,7 +45,7 @@ type DeleteOption interface {
 type ApplyOptions struct {
 	ForCreate *metav1.CreateOptions
 	ForUpdate *metav1.UpdateOptions
-	Replace   bool
+	Overwrite bool
 }
 type DeleteOptions struct {
 	ForDelete      *metav1.DeleteOptions
@@ -53,22 +53,21 @@ type DeleteOptions struct {
 }
 
 var DryRunAll = dryRunAll{}
-var Overwrite = Replace(true)
 
 type FieldManager string
 type GracePeriodSeconds int64
 type Preconditions metav1.Preconditions
 type PropagationPolicy metav1.DeletionPropagation
 type IgnoreNotFound bool
-type Replace bool
+type Overwrite bool
 type dryRunAll struct{} // for both apply and delete
 
 func (dryRunAll) ApplyWith(opts *ApplyOptions) {
 	opts.ForCreate.DryRun = []string{metav1.DryRunAll}
 	opts.ForUpdate.DryRun = []string{metav1.DryRunAll}
 }
-func (i Replace) ApplyWith(opts *ApplyOptions) {
-	opts.Replace = bool(i)
+func (i Overwrite) ApplyWith(opts *ApplyOptions) {
+	opts.Overwrite = bool(i)
 }
 func (f FieldManager) ApplyWith(opts *ApplyOptions) {
 	// TODO: The FM was introduced in k8s 1.14, but not ready to

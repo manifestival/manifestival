@@ -73,7 +73,7 @@ func TestMethodChaining(t *testing.T) {
 	}
 }
 
-func TestReplaceApply(t *testing.T) {
+func TestOverwriteApply(t *testing.T) {
 	current := bytes.NewReader([]byte(`
 apiVersion: v1
 kind: ComponentStatus
@@ -93,17 +93,17 @@ conditions:
   status: "False"
 `))
 	tests := []struct {
-		name     string
-		replace  bool
-		expected int
+		name      string
+		overwrite bool
+		expected  int
 	}{{
-		name:     "Merge patch",
-		replace:  false,
-		expected: 2,
+		name:      "Merge patch",
+		overwrite: false,
+		expected:  2,
 	}, {
-		name:     "Replace",
-		replace:  true,
-		expected: 1,
+		name:      "Overwrite",
+		overwrite: true,
+		expected:  1,
 	}}
 	setup, _ := ManifestFrom(Reader(current))
 	original := setup.Resources()[0]
@@ -111,7 +111,7 @@ conditions:
 		t.Run(test.name, func(t *testing.T) {
 			client := testClient(&original)
 			tgt, _ := ManifestFrom(Reader(config), UseClient(client))
-			tgt.Apply(Replace(test.replace))
+			tgt.Apply(Overwrite(test.overwrite))
 			obj, _ := tgt.Client.Get(&original)
 			actual, _, _ := unstructured.NestedSlice(obj.Object, "conditions")
 			if len(actual) != test.expected {

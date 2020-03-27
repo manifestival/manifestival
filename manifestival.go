@@ -103,7 +103,7 @@ func (m Manifest) apply(spec *unstructured.Unstructured, opts ...ApplyOption) er
 		annotate(current, "manifestival", resourceCreated)
 		return m.Client.Create(current, opts...)
 	} else {
-		if ApplyWith(opts).Replace {
+		if ApplyWith(opts).Overwrite {
 			return m.update(spec.DeepCopy(), lastApplied(spec), opts...)
 		}
 		diff, err := patch.New(current, spec)
