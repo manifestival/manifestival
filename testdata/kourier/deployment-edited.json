@@ -1,0 +1,143 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "annotations": {
+      "deployment.kubernetes.io/revision": "8",
+      "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"apps/v1\",\"kind\":\"Deployment\",\"metadata\":{\"annotations\":{\"serving.knative.openshift.io/ownerName\":\"knative-serving\",\"serving.knative.openshift.io/ownerNamespace\":\"knative-serving\"},\"name\":\"3scale-kourier-gateway\",\"namespace\":\"knative-serving-ingress\"},\"spec\":{\"selector\":{\"matchLabels\":{\"app\":\"3scale-kourier-gateway\"}},\"template\":{\"metadata\":{\"labels\":{\"app\":\"3scale-kourier-gateway\"}},\"spec\":{\"containers\":[{\"args\":[\"-c\",\"/tmp/config/envoy-bootstrap.yaml\"],\"command\":[\"/usr/local/bin/envoy\"],\"image\":\"docker.io/maistra/proxyv2-ubi8:1.0.8\",\"imagePullPolicy\":\"Always\",\"name\":\"kourier-gateway\",\"ports\":[{\"containerPort\":8080,\"name\":\"http2\",\"protocol\":\"TCP\"},{\"containerPort\":8443,\"name\":\"https\",\"protocol\":\"TCP\"}],\"readinessProbe\":{\"httpGet\":{\"httpHeaders\":[{\"name\":\"Host\",\"value\":\"internalkourier\"}],\"path\":\"/__internalkouriersnapshot\",\"port\":8081,\"scheme\":\"HTTP\"},\"initialDelaySeconds\":5,\"periodSeconds\":2},\"volumeMounts\":[{\"mountPath\":\"/tmp/config\",\"name\":\"config-volume\"}]}],\"restartPolicy\":\"Always\",\"volumes\":[{\"configMap\":{\"name\":\"kourier-bootstrap\"},\"name\":\"config-volume\"}]}}}}\n",
+      "manifestival": "new",
+      "serving.knative.openshift.io/ownerName": "knative-serving",
+      "serving.knative.openshift.io/ownerNamespace": "knative-serving"
+    },
+    "creationTimestamp": "2020-03-24T18:26:04Z",
+    "generation": 8,
+    "labels": {
+      "app": "3scale-kourier-gateway"
+    },
+    "name": "3scale-kourier-gateway",
+    "namespace": "knative-serving-ingress",
+    "resourceVersion": "52168",
+    "selfLink": "/apis/apps/v1/namespaces/knative-serving-ingress/deployments/3scale-kourier-gateway",
+    "uid": "f0e5e343-a751-40b8-8239-1dd96234c695"
+  },
+  "spec": {
+    "progressDeadlineSeconds": 600,
+    "replicas": 1,
+    "revisionHistoryLimit": 10,
+    "selector": {
+      "matchLabels": {
+        "app": "3scale-kourier-gateway"
+      }
+    },
+    "strategy": {
+      "rollingUpdate": {
+        "maxSurge": "25%",
+        "maxUnavailable": "25%"
+      },
+      "type": "RollingUpdate"
+    },
+    "template": {
+      "metadata": {
+        "creationTimestamp": null,
+        "labels": {
+          "app": "3scale-kourier-gateway"
+        }
+      },
+      "spec": {
+        "containers": [
+          {
+            "args": [
+              "-c",
+              "/tmp/config/envoy-bootstrap.yaml"
+            ],
+            "command": [
+              "/usr/local/bin/envoy"
+            ],
+            "image": "docker.io/maistra/proxyv2-ubi8:1.0.8",
+            "imagePullPolicy": "Always",
+            "name": "kourier-gateway",
+            "ports": [
+              {
+                "containerPort": 8081,
+                "name": "http2",
+                "protocol": "TCP"
+              },
+              {
+                "containerPort": 8443,
+                "name": "https",
+                "protocol": "TCP"
+              }
+            ],
+            "readinessProbe": {
+              "failureThreshold": 3,
+              "httpGet": {
+                "httpHeaders": [
+                  {
+                    "name": "Host",
+                    "value": "internalkourier"
+                  }
+                ],
+                "path": "/__internalkouriersnapshot",
+                "port": 8081,
+                "scheme": "HTTP"
+              },
+              "initialDelaySeconds": 5,
+              "periodSeconds": 2,
+              "successThreshold": 1,
+              "timeoutSeconds": 1
+            },
+            "resources": {},
+            "terminationMessagePath": "/dev/termination-log",
+            "terminationMessagePolicy": "File",
+            "volumeMounts": [
+              {
+                "mountPath": "/tmp/config",
+                "name": "config-volume"
+              }
+            ]
+          }
+        ],
+        "dnsPolicy": "ClusterFirst",
+        "restartPolicy": "Always",
+        "schedulerName": "default-scheduler",
+        "securityContext": {},
+        "terminationGracePeriodSeconds": 30,
+        "volumes": [
+          {
+            "configMap": {
+              "defaultMode": 420,
+              "name": "kourier-bootstrap"
+            },
+            "name": "config-volume"
+          }
+        ]
+      }
+    }
+  },
+  "status": {
+    "availableReplicas": 1,
+    "conditions": [
+      {
+        "lastTransitionTime": "2020-03-24T18:26:37Z",
+        "lastUpdateTime": "2020-03-24T18:26:37Z",
+        "message": "Deployment has minimum availability.",
+        "reason": "MinimumReplicasAvailable",
+        "status": "True",
+        "type": "Available"
+      },
+      {
+        "lastTransitionTime": "2020-03-24T18:26:04Z",
+        "lastUpdateTime": "2020-03-24T19:21:42Z",
+        "message": "ReplicaSet \"3scale-kourier-gateway-58bd7664b5\" is progressing.",
+        "reason": "ReplicaSetUpdated",
+        "status": "True",
+        "type": "Progressing"
+      }
+    ],
+    "observedGeneration": 8,
+    "readyReplicas": 1,
+    "replicas": 2,
+    "unavailableReplicas": 1,
+    "updatedReplicas": 1
+  }
+}

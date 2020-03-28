@@ -1,0 +1,84 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "annotations": {
+      "serving.knative.openshift.io/ownerName": "knative-serving",
+      "serving.knative.openshift.io/ownerNamespace": "knative-serving"
+    },
+    "name": "3scale-kourier-gateway",
+    "namespace": "knative-serving-ingress"
+  },
+  "spec": {
+    "selector": {
+      "matchLabels": {
+        "app": "3scale-kourier-gateway"
+      }
+    },
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "3scale-kourier-gateway"
+        }
+      },
+      "spec": {
+        "containers": [
+          {
+            "args": [
+              "-c",
+              "/tmp/config/envoy-bootstrap.yaml"
+            ],
+            "command": [
+              "/usr/local/bin/envoy"
+            ],
+            "image": "docker.io/maistra/proxyv2-ubi8:1.0.8",
+            "imagePullPolicy": "Always",
+            "name": "kourier-gateway",
+            "ports": [
+              {
+                "containerPort": 8080,
+                "name": "http2",
+                "protocol": "TCP"
+              },
+              {
+                "containerPort": 8443,
+                "name": "https",
+                "protocol": "TCP"
+              }
+            ],
+            "readinessProbe": {
+              "httpGet": {
+                "httpHeaders": [
+                  {
+                    "name": "Host",
+                    "value": "internalkourier"
+                  }
+                ],
+                "path": "/__internalkouriersnapshot",
+                "port": 8081,
+                "scheme": "HTTP"
+              },
+              "initialDelaySeconds": 5,
+              "periodSeconds": 2
+            },
+            "volumeMounts": [
+              {
+                "mountPath": "/tmp/config",
+                "name": "config-volume"
+              }
+            ]
+          }
+        ],
+        "restartPolicy": "Always",
+        "volumes": [
+          {
+            "configMap": {
+              "name": "kourier-bootstrap"
+            },
+            "name": "config-volume"
+          }
+        ]
+      }
+    }
+  }
+}
