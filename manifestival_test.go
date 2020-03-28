@@ -3,20 +3,55 @@ package manifestival_test
 import (
 	"bytes"
 	"context"
+	"io/ioutil"
 	"testing"
 
 	logr "github.com/go-logr/logr/testing"
 	. "github.com/manifestival/manifestival"
 
+	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/conversion"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/kubernetes/pkg/apis/apps"
+	corev1 "k8s.io/kubernetes/pkg/apis/core/v1"
+	"k8s.io/kubernetes/pkg/registry/apps/deployment"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
+
+func init() {
+	corev1.AddToScheme(scheme.Scheme)
+	scheme.Scheme.AddConversionFuncs(
+		func(in *appsv1.RollingUpdateDeployment, out *apps.RollingUpdateDeployment, scope conversion.Scope) error {
+			out.MaxUnavailable = *in.MaxUnavailable
+			out.MaxSurge = *in.MaxSurge
+			return nil
+		},
+	)
+}
+
+func TestPortUpdates(t *testing.T) {
+	specBytes, _ := ioutil.ReadFile("testdata/kourier/deployment-spec.json")
+	editedBytes, _ := ioutil.ReadFile("testdata/kourier/deployment-edited.json")
+	spec := &unstructured.Unstructured{}
+	edited := &unstructured.Unstructured{}
+	if err := spec.UnmarshalJSON(specBytes); err != nil {
+		t.Error(err)
+	}
+	if err := edited.UnmarshalJSON(editedBytes); err != nil {
+		t.Error(err)
+	}
+	c := testClient(edited)
+	manifest, _ := ManifestFrom(Slice([]unstructured.Unstructured{*spec}), UseClient(c), UseLogger(logr.TestLogger{T: t}))
+	if err := manifest.Apply(); err != nil {
+		t.Error(err)
+	}
+}
 
 func TestLastAppliedAnnotation(t *testing.T) {
 	cm := v1.ConfigMap{
@@ -130,12 +165,20 @@ type fakeClient struct {
 }
 
 var _ Client = (*fakeClient)(nil)
+var deploymentor = deployment.Strategy
 
 func (c *fakeClient) Create(obj *unstructured.Unstructured, options ...ApplyOption) error {
 	return c.client.Create(context.TODO(), obj)
 }
 
 func (c *fakeClient) Update(obj *unstructured.Unstructured, options ...ApplyOption) error {
+	if obj.GetKind() == "Deployment" {
+		dObj := &apps.Deployment{}
+		scheme.Scheme.Convert(obj, dObj, nil)
+		if errs := deploymentor.Validate(context.TODO(), dObj); len(errs) > 0 {
+			return errs.ToAggregate()
+		}
+	}
 	return c.client.Update(context.TODO(), obj)
 }
 

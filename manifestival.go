@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/go-logr/logr/testing"
+	"github.com/manifestival/manifestival/overlay"
 	"github.com/manifestival/manifestival/patch"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -103,20 +104,26 @@ func (m Manifest) apply(spec *unstructured.Unstructured, opts ...ApplyOption) er
 		annotate(current, "manifestival", resourceCreated)
 		return m.Client.Create(current, opts...)
 	} else {
-		if ApplyWith(opts).Overwrite {
-			return m.update(spec.DeepCopy(), lastApplied(spec), opts...)
-		}
-		diff, err := patch.New(current, spec)
-		if err != nil {
-			return err
-		}
-		if diff != nil {
+		if !ApplyWith(opts).Overwrite {
+			diff, err := patch.New(current, spec)
+			if err != nil {
+				return err
+			}
+			if diff == nil {
+				return nil
+			}
 			m.log.Info("Merging", "diff", diff)
 			if err := diff.Merge(current); err != nil {
 				return err
 			}
-			return m.update(current, lastApplied(spec), opts...)
+			err = m.update(current, lastApplied(spec), opts...)
+			if err == nil {
+				return nil
+			}
+			m.log.Error(err, "Failed to update merged resource, trying overwrite")
 		}
+		overlay.Copy(spec.Object, current.Object)
+		return m.update(current, lastApplied(spec), opts...)
 	}
 	return nil
 }
