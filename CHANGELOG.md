@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 - Renamed `Replace` option to `Overwrite` to better match the behavior
   of the `kubectl apply` subcommand. To use it: `m.Apply(Overwrite(true))`
+- Made the `None` filter variadic, accepting multiple `Predicates`,
+  returning only those resources matching none of them.
   
 ### Added
 

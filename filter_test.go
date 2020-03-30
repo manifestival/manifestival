@@ -80,6 +80,22 @@ func TestFilter(t *testing.T) {
 		predicates: []Predicate{Any(False, False)},
 		count:      0,
 	}, {
+		name:       "None, first true then false",
+		predicates: []Predicate{None(True, False)},
+		count:      0,
+	}, {
+		name:       "None, first false then true",
+		predicates: []Predicate{None(False, True)},
+		count:      0,
+	}, {
+		name:       "None, both true",
+		predicates: []Predicate{None(True, True)},
+		count:      0,
+	}, {
+		name:       "None, both false",
+		predicates: []Predicate{None(False, False)},
+		count:      55,
+	}, {
 		name:       "One match By GVK",
 		predicates: []Predicate{ByGVK(schema.GroupVersionKind{Kind: "Namespace", Version: "v1"})},
 		count:      1,
