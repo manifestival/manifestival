@@ -16,6 +16,7 @@ func ApplyWith(options []ApplyOption) *ApplyOptions {
 	result := &ApplyOptions{
 		ForCreate: &metav1.CreateOptions{},
 		ForUpdate: &metav1.UpdateOptions{},
+		Overwrite: true,
 	}
 	for _, f := range options {
 		f.ApplyWith(result)

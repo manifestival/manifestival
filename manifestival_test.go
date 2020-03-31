@@ -48,6 +48,9 @@ func TestPortUpdates(t *testing.T) {
 	}
 	c := testClient(edited)
 	manifest, _ := ManifestFrom(Slice([]unstructured.Unstructured{*spec}), UseClient(c), UseLogger(logr.TestLogger{T: t}))
+	if err := manifest.Apply(Overwrite(false)); err == nil {
+		t.Error("Should have received an invalid error")
+	}
 	if err := manifest.Apply(); err != nil {
 		t.Error(err)
 	}
@@ -176,7 +179,7 @@ func (c *fakeClient) Update(obj *unstructured.Unstructured, options ...ApplyOpti
 		dObj := &apps.Deployment{}
 		scheme.Scheme.Convert(obj, dObj, nil)
 		if errs := deploymentor.Validate(context.TODO(), dObj); len(errs) > 0 {
-			return errs.ToAggregate()
+			return errors.NewInvalid(obj.GroupVersionKind().GroupKind(), obj.GetName(), errs)
 		}
 	}
 	return c.client.Update(context.TODO(), obj)
