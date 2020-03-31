@@ -7,6 +7,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Changed
 
+### Added
+
+### Removed
+
+
+## [0.5.0] - 2020-03-31
+
+### Changed
+
 - Renamed the `Replace` option to `Overwrite` to better match the
   behavior of the `kubectl apply` subcommand. Its default value is now
   true, which will cause `Apply` to "automatically resolve conflicts
@@ -16,12 +25,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - Made the `None` filter variadic, accepting multiple `Predicates`,
   returning only those resources matching none of them. [#36](https://github.com/manifestival/manifestival/issues/36)
   
-### Added
 
-### Removed
-
-
-## [0.4.0] - 2019-03-11
+## [0.4.0] - 2020-03-11
 
 ### Added
 
@@ -45,7 +50,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
   manipulate resources [#33](https://github.com/manifestival/manifestival/pull/33)
 
 
-## [0.3.1] - 2019-02-26
+## [0.3.1] - 2020-02-26
 
 ### Changed
 
@@ -53,7 +58,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
   [#27](https://github.com/manifestival/manifestival/issues/27)
 
 
-## [0.3.0] - 2019-02-25
+## [0.3.0] - 2020-02-25
 
 ### Added
 
@@ -74,7 +79,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
   to `NoCRDs`.
 
 
-## [0.2.0] - 2019-02-21
+## [0.2.0] - 2020-02-21
 
 ### Added
 
@@ -132,7 +137,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
   of calls involving `Filter`, for example. [#21](https://github.com/manifestival/manifestival/issues/21)
 
 
-## [0.1.0] - 2019-02-17
+## [0.1.0] - 2020-02-17
 
 ### Changed
 
@@ -152,7 +157,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
   merged 
 
 
-## [0.0.0] - 2019-01-11
+## [0.0.0] - 2020-01-11
 
 ### Changed
 
@@ -165,7 +170,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 [controller-runtime]: https://github.com/manifestival/controller-runtime-client
 [client-go]: https://github.com/manifestival/client-go-client
-[unreleased]: https://github.com/manifestival/manifestival/compare/v0.4.0...HEAD
+[unreleased]: https://github.com/manifestival/manifestival/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/manifestival/manifestival/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/manifestival/manifestival/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/manifestival/manifestival/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/manifestival/manifestival/compare/v0.2.0...v0.3.0
