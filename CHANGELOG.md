@@ -7,10 +7,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Changed
 
-- Renamed `Replace` option to `Overwrite` to better match the behavior
-  of the `kubectl apply` subcommand. To use it: `m.Apply(Overwrite(true))`
+- Renamed the `Replace` option to `Overwrite` to better match the
+  behavior of the `kubectl apply` subcommand. Its default value is now
+  true, which will cause `Apply` to "automatically resolve conflicts
+  between the modified and live configuration by using values from the
+  modified configuration". To override this behavior and have invalid
+  patches return an error, call `Apply(Overwrite(false))` [#39](https://github.com/manifestival/manifestival/pull/39)
 - Made the `None` filter variadic, accepting multiple `Predicates`,
-  returning only those resources matching none of them.
+  returning only those resources matching none of them. [#36](https://github.com/manifestival/manifestival/issues/36)
   
 ### Added
 
