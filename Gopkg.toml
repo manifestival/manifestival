@@ -24,17 +24,25 @@
 #   go-tests = true
 #   unused-packages = true
 
-[[override]]
-  name = "k8s.io/kubernetes"
-  version = "=v1.15.4"
+required = [
+    "github.com/go-logr/logr",
+]
+
+[[constraint]]
+ name = "k8s.io/kubernetes"
+ version = "v1.16.4"
 
 [[constraint]]
   name = "k8s.io/apimachinery"
-  version = "kubernetes-1.15.4"
+  version = "kubernetes-1.16.4"
 
 [[constraint]]
   name = "k8s.io/api"
-  version = "kubernetes-1.15.4"
+  version = "kubernetes-1.16.4"
+
+[[constraint]]
+  name = "k8s.io/client-go"
+  version = "kubernetes-1.16.4"
 
 [prune]
   go-tests = true
