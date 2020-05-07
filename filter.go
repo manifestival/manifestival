@@ -25,6 +25,7 @@ func (m Manifest) Filter(preds ...Predicate) Manifest {
 	return result
 }
 
+// All returns true iff all predicates are true
 func All(preds ...Predicate) Predicate {
 	return func(u *unstructured.Unstructured) bool {
 		for _, p := range preds {
@@ -36,6 +37,7 @@ func All(preds ...Predicate) Predicate {
 	}
 }
 
+// Any returns true iff any of the predicates are true
 func Any(preds ...Predicate) Predicate {
 	return func(u *unstructured.Unstructured) bool {
 		for _, p := range preds {

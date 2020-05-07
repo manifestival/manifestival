@@ -37,8 +37,9 @@ type Manifest struct {
 
 var _ Manifestival = &Manifest{}
 
-// NewManifest creates a Manifest from a comma-separated set of yaml
-// files, directories, or URLs
+// NewManifest creates a Manifest from a comma-separated set of YAML
+// files, directories, or URLs. It's equivalent to
+// `ManifestFrom(Path(pathname))`
 func NewManifest(pathname string, opts ...Option) (Manifest, error) {
 	return ManifestFrom(Path(pathname), opts...)
 }
