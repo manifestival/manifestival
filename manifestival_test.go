@@ -45,14 +45,13 @@ func TestPortUpdates(t *testing.T) {
 		t.Error(err)
 	}
 	c := fake.New(edited)
-	update := c.Stubs.Update
 	c.Stubs.Update = func(obj *unstructured.Unstructured) error {
 		dObj := &apps.Deployment{}
 		scheme.Scheme.Convert(obj, dObj, nil)
 		if errs := deployment.Strategy.Validate(context.TODO(), dObj); len(errs) > 0 {
 			return errors.NewInvalid(obj.GroupVersionKind().GroupKind(), obj.GetName(), errs)
 		}
-		return update(obj)
+		return nil
 	}
 	manifest, _ := ManifestFrom(Slice([]unstructured.Unstructured{*spec}), UseClient(c), UseLogger(logr.TestLogger{T: t}))
 	if err := manifest.Apply(Overwrite(false)); err == nil {
