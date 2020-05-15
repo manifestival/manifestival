@@ -8,6 +8,7 @@ import (
 
 	logr "github.com/go-logr/logr/testing"
 	. "github.com/manifestival/manifestival"
+	"github.com/manifestival/manifestival/fake"
 
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -15,13 +16,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/conversion"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/kubernetes/pkg/apis/apps"
 	corev1 "k8s.io/kubernetes/pkg/apis/core/v1"
 	"k8s.io/kubernetes/pkg/registry/apps/deployment"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func init() {
@@ -46,7 +44,16 @@ func TestPortUpdates(t *testing.T) {
 	if err := edited.UnmarshalJSON(editedBytes); err != nil {
 		t.Error(err)
 	}
-	c := testClient(edited)
+	c := fake.New(edited)
+	update := c.Stubs.Update
+	c.Stubs.Update = func(obj *unstructured.Unstructured) error {
+		dObj := &apps.Deployment{}
+		scheme.Scheme.Convert(obj, dObj, nil)
+		if errs := deployment.Strategy.Validate(context.TODO(), dObj); len(errs) > 0 {
+			return errors.NewInvalid(obj.GroupVersionKind().GroupKind(), obj.GetName(), errs)
+		}
+		return update(obj)
+	}
 	manifest, _ := ManifestFrom(Slice([]unstructured.Unstructured{*spec}), UseClient(c), UseLogger(logr.TestLogger{T: t}))
 	if err := manifest.Apply(Overwrite(false)); err == nil {
 		t.Error("Should have received an invalid error")
@@ -70,7 +77,7 @@ func TestLastAppliedAnnotation(t *testing.T) {
 	// Seed the fake client with a different configmap
 	cm.Data["foo"] = "baz"
 	cm.Data["bizz"] = "buzz"
-	client := testClient(&cm)
+	client := fake.New(&cm)
 	// Use the unstructured for our manifest
 	m, _ := ManifestFrom(Slice([]unstructured.Unstructured{u}), UseClient(client))
 	if err := m.Apply(); err != nil {
@@ -87,7 +94,7 @@ func TestMethodChaining(t *testing.T) {
 	const expected = 6
 	const kind = "Deployment"
 	const name = "controller"
-	manifest, _ := NewManifest("testdata/k-s-v0.12.1.yaml", UseClient(testClient()), UseLogger(logr.TestLogger{T: t}))
+	manifest, _ := NewManifest("testdata/k-s-v0.12.1.yaml", UseClient(fake.New()), UseLogger(logr.TestLogger{T: t}))
 	// Filter->Transform->Resources
 	deployments, _ := manifest.Filter(ByKind(kind)).Transform(InjectNamespace("foo"))
 	if len(deployments.Resources()) != expected {
@@ -147,7 +154,7 @@ conditions:
 	original := setup.Resources()[0]
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			client := testClient(&original)
+			client := fake.New(&original)
 			tgt, _ := ManifestFrom(Reader(config), UseClient(client))
 			tgt.Apply(Overwrite(test.overwrite))
 			obj, _ := tgt.Client.Get(&original)
@@ -157,42 +164,4 @@ conditions:
 			}
 		})
 	}
-}
-
-func testClient(objs ...runtime.Object) Client {
-	return &fakeClient{client: fake.NewFakeClient(objs...)}
-}
-
-type fakeClient struct {
-	client client.Client
-}
-
-var _ Client = (*fakeClient)(nil)
-var deploymentor = deployment.Strategy
-
-func (c *fakeClient) Create(obj *unstructured.Unstructured, options ...ApplyOption) error {
-	return c.client.Create(context.TODO(), obj)
-}
-
-func (c *fakeClient) Update(obj *unstructured.Unstructured, options ...ApplyOption) error {
-	if obj.GetKind() == "Deployment" {
-		dObj := &apps.Deployment{}
-		scheme.Scheme.Convert(obj, dObj, nil)
-		if errs := deploymentor.Validate(context.TODO(), dObj); len(errs) > 0 {
-			return errors.NewInvalid(obj.GroupVersionKind().GroupKind(), obj.GetName(), errs)
-		}
-	}
-	return c.client.Update(context.TODO(), obj)
-}
-
-func (c *fakeClient) Delete(obj *unstructured.Unstructured, options ...DeleteOption) error {
-	return client.IgnoreNotFound(c.client.Delete(context.TODO(), obj))
-}
-
-func (c *fakeClient) Get(obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
-	key := client.ObjectKey{Namespace: obj.GetNamespace(), Name: obj.GetName()}
-	result := &unstructured.Unstructured{}
-	result.SetGroupVersionKind(obj.GroupVersionKind())
-	err := c.client.Get(context.TODO(), key, result)
-	return result, err
 }

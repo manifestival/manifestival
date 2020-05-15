@@ -7,11 +7,12 @@ import (
 	"testing"
 
 	. "github.com/manifestival/manifestival"
+	"github.com/manifestival/manifestival/fake"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 func TestDryRun(t *testing.T) {
-	client := testClient()
+	client := fake.New()
 	current, _ := NewManifest("testdata/dry/current.yaml", UseClient(client))
 	current.Apply()
 	modified, _ := NewManifest("testdata/dry/modified.yaml", UseClient(client))
@@ -28,7 +29,7 @@ func TestDryRun(t *testing.T) {
 }
 
 func TestNothingChanged(t *testing.T) {
-	client := testClient()
+	client := fake.New()
 	current, _ := NewManifest("testdata/dry/current.yaml", UseClient(client))
 	current.Apply()
 	diffs, err := current.DryRun()
@@ -41,7 +42,7 @@ func TestNothingChanged(t *testing.T) {
 }
 
 func TestKnativeUpgrade(t *testing.T) {
-	client := testClient()
+	client := fake.New()
 	old, _ := NewManifest("testdata/k-s-v0.11.0.yaml", UseClient(client))
 	old.Apply()
 	new, _ := NewManifest("testdata/k-s-v0.12.1.yaml", UseClient(client))
