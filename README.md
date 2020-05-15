@@ -19,7 +19,7 @@ See [CHANGELOG.md](CHANGELOG.md)
   * [Transform](#transform)
 * Applying Manifests
   * [Client](#client)
-    * [fake.Client](#fake-client)
+    * [fake.Client](#fakeclient)
   * [Logging](#logging)
   * [Apply](#apply)
   * [Delete](#delete)
@@ -191,7 +191,7 @@ manifest.Client.Create(&u)
 
 #### fake.Client
 
-The `fake` package includes a fake `Client` with stubs you can easily
+The [fake] package includes a fake `Client` with stubs you can easily
 override in your unit tests. For example,
 
 ```go
@@ -288,3 +288,4 @@ You know the drill...
 [Client]: https://godoc.org/github.com/manifestival/manifestival#Client
 [Transformer]: https://godoc.org/github.com/manifestival/manifestival#Transformer
 [logr.Logger]: https://github.com/go-logr/logr
+[fake]: https://godoc.org/github.com/manifestival/manifestival/fake
