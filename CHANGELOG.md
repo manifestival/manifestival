@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Added
 
+- Introduced `Append` to the `Manifestival` interface. This enables
+  the creation of new manifests from the concatenation of others. The
+  resulting manifest retains the options, e.g. client and logger, of
+  the receiver. [#41](https://github.com/manifestival/manifestival/issues/41)
 - New fake `Client` to facilitate testing. Provides both a simple
   in-memory object store and easily-override-able stubs for all the
   `Client` functions: `Create`, `Update`, `Delete`, or `Get`

@@ -15,6 +15,7 @@ See [CHANGELOG.md](CHANGELOG.md)
 
 * [Creating Manifests](#creating-manifests)
   * [Sources](#sources)
+  * [Append](#append)
   * [Filter](#filter)
   * [Transform](#transform)
 * Applying Manifests
@@ -78,7 +79,8 @@ searched recursively.
 The `Slice` source enables the creation of a manifest from an existing
 slice of `[]unstructured.Unstructured`. This is helpful for testing
 and, combined with the [Resources] accessor, facilitates more
-sophisticated combinations of manifests, e.g. append:
+sophisticated combinations of manifests, e.g. a crude form of
+[Append](#append):
 
 ```go
 m3, _ := ManifestFrom(Slice(append(m1.Resources(), m2.Resources()...)))
@@ -87,6 +89,19 @@ m3, _ := ManifestFrom(Slice(append(m1.Resources(), m2.Resources()...)))
 And `Reader` is a function that takes an `io.Reader` and returns a
 `Source` from which valid YAML is expected.
 
+### Append
+
+The `Append` function enables the creation of new manifests from the
+concatenation of others. The resulting manifest retains the options,
+e.g. client and logger, of the receiver. For example,
+
+```go
+core, _ := NewManifest(path, UseLogger(logger), UseClient(client))
+istio, _ := NewManifest(pathToIstio)
+kafka, _ := NewManifest(pathToKafka)
+
+manifest := core.Append(istio, kafka)
+```
 
 ### Filter
 

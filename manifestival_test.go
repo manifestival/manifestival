@@ -84,9 +84,7 @@ func TestLastAppliedAnnotation(t *testing.T) {
 	}
 	x, _ := m.Client.Get(&u)
 	actual := x.GetAnnotations()[v1.LastAppliedConfigAnnotation]
-	if expected != actual {
-		t.Errorf("Expected %v, got %v", expected, actual)
-	}
+	assert(t, actual, expected)
 }
 
 func TestMethodChaining(t *testing.T) {
@@ -96,9 +94,7 @@ func TestMethodChaining(t *testing.T) {
 	manifest, _ := NewManifest("testdata/k-s-v0.12.1.yaml", UseClient(fake.New()), UseLogger(logr.TestLogger{T: t}))
 	// Filter->Transform->Resources
 	deployments, _ := manifest.Filter(ByKind(kind)).Transform(InjectNamespace("foo"))
-	if len(deployments.Resources()) != expected {
-		t.Errorf("Expected %d deployments, got %d", expected, len(deployments.Resources()))
-	}
+	assert(t, len(deployments.Resources()), expected)
 	// Filter->Apply
 	if err := manifest.Filter(ByKind(kind)).Apply(); err != nil {
 		t.Error(err, "Expected deployments to be applied")
@@ -158,9 +154,35 @@ conditions:
 			tgt.Apply(Overwrite(test.overwrite))
 			obj, _ := tgt.Client.Get(&original)
 			actual, _, _ := unstructured.NestedSlice(obj.Object, "conditions")
-			if len(actual) != test.expected {
-				t.Errorf("Nope! Expected %v, got %v", test.expected, len(actual))
-			}
+			assert(t, len(actual), test.expected)
 		})
 	}
+}
+
+func TestAppend(t *testing.T) {
+	u := &unstructured.Unstructured{}
+	u.SetName("testy")
+	client := fake.New(u)
+	m1, _ := NewManifest("testdata/tree/file.yaml", UseClient(client))
+	m2, _ := NewManifest("testdata/tree/file.yaml")
+	m3 := m1.Append(m2)
+	m4 := m1.Append(m2, m3)
+	assert(t, len(m1.Resources()), 2)
+	assert(t, len(m2.Resources()), 2)
+	assert(t, len(m3.Resources()), 4)
+	assert(t, len(m4.Resources()), 8)
+
+	assert(t, m2.Client == nil, true)
+	for _, m := range []Manifest{m1, m3, m4} {
+		q, _ := m.Client.Get(u)
+		assert(t, q.GetName(), u.GetName())
+	}
+}
+
+func assert(t *testing.T, actual, expected interface{}) {
+	t.Helper()
+	if actual == expected {
+		return
+	}
+	t.Fatalf("\nExpected: %v\n  Actual: %v", expected, actual)
 }
