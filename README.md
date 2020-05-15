@@ -19,6 +19,7 @@ See [CHANGELOG.md](CHANGELOG.md)
   * [Transform](#transform)
 * Applying Manifests
   * [Client](#client)
+    * [fake.Client](#fake-client)
   * [Logging](#logging)
   * [Apply](#apply)
   * [Delete](#delete)
@@ -186,6 +187,41 @@ manifest.Filter(NoCRDs).Delete()
 u := manifest.Resources()[0]
 u.SetName("foo")
 manifest.Client.Create(&u)
+```
+
+#### fake.Client
+
+The `fake` package includes a fake `Client` with stubs you can easily
+override in your unit tests. For example,
+
+```go
+func verifySomething(t *testing.T, expected *unstructured.Unstructured) {
+    client := fake.Client{
+        Stubs{
+            Create: func(u *unstructured.Unstructured) error {
+                if !reflect.DeepEqual(u, expected) {
+    				t.Error("You did it wrong!")
+    			}
+                return nil
+            },
+        },
+    }
+    manifest, _ := NewManifest("testdata/some.yaml", UseClient(client))
+    callSomethingThatUltimatelyAppliesThis(manifest)
+}
+```
+
+There is also a convenient `New` function that returns a
+fully-functioning fake Client by overriding the stubs to persist the
+resources in a map. Here's an example using it to test the `DryRun`
+function: 
+
+```go
+client := fake.New()
+current, _ := NewManifest("testdata/current.yaml", UseClient(client))
+current.Apply()
+modified, _ := NewManifest("testdata/modified.yaml", UseClient(client))
+diffs, err := modified.DryRun()
 ```
 
 ### Logging

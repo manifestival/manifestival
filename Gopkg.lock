@@ -223,19 +223,9 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:ad2bf20798504fbde0c5bdf5ee83d3354fb101d32c5b2267f811c1958b91b0ab"
-  name = "golang.org/x/crypto"
-  packages = ["ssh/terminal"]
-  pruneopts = "UT"
-  revision = "bac4c82f69751a6dd76e702d54b3ceb88adab236"
-
-[[projects]]
-  branch = "master"
-  digest = "1:662a8c1aee3ef7598f411747b9ee82e76e3cee4974d14b12d735f6814d477a86"
+  digest = "1:92d83b7f3bfcba76f533a56e67739790845929e511911a634273cfd8e0fbeb72"
   name = "golang.org/x/net"
   packages = [
-    "context",
-    "context/ctxhttp",
     "http/httpguts",
     "http2",
     "http2/hpack",
@@ -243,17 +233,6 @@
   ]
   pruneopts = "UT"
   revision = "46282727080fcf56da5781d0a9ef2fda184be5e6"
-
-[[projects]]
-  branch = "master"
-  digest = "1:911b45b658f5fab1a26259e2fd1085ab296f9d3e46117311d25f8dae51efe720"
-  name = "golang.org/x/oauth2"
-  packages = [
-    ".",
-    "internal",
-  ]
-  pruneopts = "UT"
-  revision = "bf48bf16ab8d622ce64ec6ce98d2c98f916b6303"
 
 [[projects]]
   branch = "master"
@@ -290,30 +269,6 @@
   pruneopts = "UT"
   revision = "342b2e1fbaa52c93f31447ad2c6abc048c63e475"
   version = "v0.3.2"
-
-[[projects]]
-  branch = "master"
-  digest = "1:a2f668c709f9078828e99cb1768cb02e876cb81030545046a32b54b2ac2a9ea8"
-  name = "golang.org/x/time"
-  packages = ["rate"]
-  pruneopts = "UT"
-  revision = "555d28b269f0569763d25dbe1a237ae74c6bcc82"
-
-[[projects]]
-  digest = "1:e0a1881f9e0564bebdeac98c75e59f07acdde6ed3a5396e0e613eaad31194866"
-  name = "google.golang.org/appengine"
-  packages = [
-    "internal",
-    "internal/base",
-    "internal/datastore",
-    "internal/log",
-    "internal/remote_api",
-    "internal/urlfetch",
-    "urlfetch",
-  ]
-  pruneopts = "UT"
-  revision = "971852bfffca25b069c31162ae8f247a3dba083b"
-  version = "v1.6.5"
 
 [[projects]]
   digest = "1:2d1fbdc6777e5408cabeb02bf336305e724b925ff4546ded0fa8715a7267922a"
@@ -385,7 +340,7 @@
   version = "kubernetes-1.15.4"
 
 [[projects]]
-  digest = "1:fb7f2ef088a29a7839d4fee41298c07e05c1f00f14a50a636e08889ac774d260"
+  digest = "1:0518d6d748d17d06b59682cec39eb8ea2a134578171a65185fb8919c80f12a1d"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/equality",
@@ -409,11 +364,9 @@
     "pkg/runtime/serializer/json",
     "pkg/runtime/serializer/protobuf",
     "pkg/runtime/serializer/recognizer",
-    "pkg/runtime/serializer/streaming",
     "pkg/runtime/serializer/versioning",
     "pkg/selection",
     "pkg/types",
-    "pkg/util/clock",
     "pkg/util/diff",
     "pkg/util/errors",
     "pkg/util/framer",
@@ -431,7 +384,6 @@
     "pkg/util/validation",
     "pkg/util/validation/field",
     "pkg/util/yaml",
-    "pkg/version",
     "pkg/watch",
     "third_party/forked/golang/json",
     "third_party/forked/golang/reflect",
@@ -465,29 +417,9 @@
   version = "kubernetes-1.15.4"
 
 [[projects]]
-  digest = "1:f814e73ce0853abf78ef7c7786e9c11a5acd4ecc054a92b62c4767d811f6fa2c"
+  digest = "1:51c12c1a40d1eb166ef63470e0a3f15e6564d70aef537b978f8a7f09e227ef72"
   name = "k8s.io/client-go"
-  packages = [
-    "discovery",
-    "dynamic",
-    "kubernetes/scheme",
-    "pkg/apis/clientauthentication",
-    "pkg/apis/clientauthentication/v1alpha1",
-    "pkg/apis/clientauthentication/v1beta1",
-    "pkg/version",
-    "plugin/pkg/client/auth/exec",
-    "rest",
-    "rest/watch",
-    "restmapper",
-    "testing",
-    "tools/clientcmd/api",
-    "tools/metrics",
-    "transport",
-    "util/cert",
-    "util/connrotation",
-    "util/flowcontrol",
-    "util/keyutil",
-  ]
+  packages = ["kubernetes/scheme"]
   pruneopts = "UT"
   revision = "78d2af792babf2dd937ba2e2a8d99c753a5eda89"
   version = "v12.0.0"
@@ -548,29 +480,15 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:125944bb9ab6497dacaebd183dd155601c899e2be4e4b03de5c093ccbfdcbd97"
+  digest = "1:fb77403f94ccc5066ad779d45c0d9195b92fb9ec60bec26d3b533c5721b93dd1"
   name = "k8s.io/utils"
   packages = [
-    "integer",
     "net",
     "path",
     "pointer",
   ]
   pruneopts = "UT"
   revision = "861946025e3491219eaccb1bf693e23df70c2fa8"
-
-[[projects]]
-  digest = "1:60de9ef6ba6ae3ced78a36c8dafbf5ca36d9d43059d7dbe7462be61d0feab740"
-  name = "sigs.k8s.io/controller-runtime"
-  packages = [
-    "pkg/client",
-    "pkg/client/apiutil",
-    "pkg/client/fake",
-    "pkg/internal/objectutil",
-  ]
-  pruneopts = "UT"
-  revision = "0fcf28efebc9a977c954f00d40af966d6a4aeae3"
-  version = "v0.5.0"
 
 [[projects]]
   digest = "1:36d2b2cb1fa6e4a731e38c3582c203213cdbc52c5f202af07db6dc6eeaec88dc"
@@ -602,8 +520,6 @@
     "k8s.io/kubernetes/pkg/apis/apps",
     "k8s.io/kubernetes/pkg/apis/core/v1",
     "k8s.io/kubernetes/pkg/registry/apps/deployment",
-    "sigs.k8s.io/controller-runtime/pkg/client",
-    "sigs.k8s.io/controller-runtime/pkg/client/fake",
     "sigs.k8s.io/yaml",
   ]
   solver-name = "gps-cdcl"

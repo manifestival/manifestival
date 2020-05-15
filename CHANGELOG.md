@@ -9,6 +9,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Added
 
+- New fake `Client` to facilitate testing. Provides both a simple
+  in-memory object store and easily-override-able stubs for all the
+  `Client` functions: `Create`, `Update`, `Delete`, or `Get`
+  [#43](https://github.com/manifestival/manifestival/pull/43)
+- More [docs](README.md), including
+  [godoc](https://godoc.org/github.com/manifestival/manifestival)
+  [#42](https://github.com/manifestival/manifestival/pull/42)
+
 ### Removed
 
 
