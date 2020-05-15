@@ -13,9 +13,13 @@ import (
 
 var _ mf.Client = &Client{}
 
-type mutator func(obj *unstructured.Unstructured) error
-type accessor func(obj *unstructured.Unstructured) (*unstructured.Unstructured, error)
+// A convenient way to stub out a Client for test fixtures. Default
+// behavior does nothing and returns a nil error.
+type Client struct {
+	Stubs
+}
 
+// Override any of the Client functions
 type Stubs struct {
 	Create mutator
 	Update mutator
@@ -23,38 +27,11 @@ type Stubs struct {
 	Get    accessor
 }
 
-type Client struct {
-	Stubs
-}
+type mutator func(obj *unstructured.Unstructured) error
+type accessor func(obj *unstructured.Unstructured) (*unstructured.Unstructured, error)
 
-func (c Client) Create(obj *unstructured.Unstructured, options ...mf.ApplyOption) error {
-	if c.Stubs.Create != nil {
-		return c.Stubs.Create(obj)
-	}
-	return nil
-}
-
-func (c Client) Update(obj *unstructured.Unstructured, options ...mf.ApplyOption) error {
-	if c.Stubs.Update != nil {
-		return c.Stubs.Update(obj)
-	}
-	return nil
-}
-
-func (c Client) Delete(obj *unstructured.Unstructured, options ...mf.DeleteOption) error {
-	if c.Stubs.Delete != nil {
-		return c.Stubs.Delete(obj)
-	}
-	return nil
-}
-
-func (c Client) Get(obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
-	if c.Stubs.Get != nil {
-		return c.Stubs.Get(obj)
-	}
-	return nil, nil
-}
-
+// New returns a fully-functioning Client, "persisting" resources in a
+// map, optionally initialized with some API objects
 func New(objs ...runtime.Object) Client {
 	store := map[string]*unstructured.Unstructured{}
 	key := func(u *unstructured.Unstructured) string {
@@ -90,4 +67,36 @@ func New(objs ...runtime.Object) Client {
 			},
 		},
 	}
+}
+
+// Manifestival.Client.Create
+func (c Client) Create(obj *unstructured.Unstructured, options ...mf.ApplyOption) error {
+	if c.Stubs.Create != nil {
+		return c.Stubs.Create(obj)
+	}
+	return nil
+}
+
+// Manifestival.Client.Update
+func (c Client) Update(obj *unstructured.Unstructured, options ...mf.ApplyOption) error {
+	if c.Stubs.Update != nil {
+		return c.Stubs.Update(obj)
+	}
+	return nil
+}
+
+// Manifestival.Client.Delete
+func (c Client) Delete(obj *unstructured.Unstructured, options ...mf.DeleteOption) error {
+	if c.Stubs.Delete != nil {
+		return c.Stubs.Delete(obj)
+	}
+	return nil
+}
+
+// Manifestival.Client.Get
+func (c Client) Get(obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+	if c.Stubs.Get != nil {
+		return c.Stubs.Get(obj)
+	}
+	return nil, nil
 }
