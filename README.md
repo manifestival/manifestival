@@ -18,7 +18,7 @@ See [CHANGELOG.md](CHANGELOG.md)
   * [Append](#append)
   * [Filter](#filter)
   * [Transform](#transform)
-* Applying Manifests
+* [Applying Manifests](#applying-manifests)
   * [Client](#client)
     * [fake.Client](#fakeclient)
   * [Logging](#logging)
@@ -31,8 +31,8 @@ See [CHANGELOG.md](CHANGELOG.md)
 ## Creating Manifests
 
 Manifests may be constructed from a variety of sources. Once created,
-they are immutable, but you can create new instances from them using
-their `Filter` and `Transform` functions.
+they are immutable, but new instances may be created from them using
+their [Append], [Filter] and [Transform] functions.
 
 The typical way to create a manifest is by calling `NewManifest`
 
@@ -139,7 +139,7 @@ error. For more complex mutations, use `Transform` instead.
 
 ### Transform
 
-`Transform` will apply some function to every resource in your
+[Transform] will apply some function to every resource in your
 manifest, and return a new Manifest with the results. It's common for
 a [Transformer] function to include a guard that simply returns if the
 unstructured resource isn't of interest.
@@ -171,6 +171,11 @@ m, err := manifest.Transform(updateDeployment, InjectOwner(parent), InjectNamesp
 
 
 ## Applying Manifests
+
+Persisting manifests is accomplished via the [Apply] and [Delete]
+functions of the [Manifestival] interface, and though [DryRun] doesn't
+change anything, it does query the API Server. Therefore all of these
+functions require a [Client].
 
 ### Client
 
@@ -251,7 +256,7 @@ m, _ := NewManifest(path, UseLogger(log.WithName("manifestival")), UseClient(c))
 
 ### Apply
 
-`Apply` will persist every resource in the manifest to the cluster. It
+[Apply] will persist every resource in the manifest to the cluster. It
 will invoke either `Create` or `Update` depending on whether the
 resource already exists. And if it does exist, the same 3-way
 strategic merge patch used by `kubectl` will be applied. And the same
@@ -268,7 +273,7 @@ fields or `kubectl apply` flags:
 
 ### Delete
 
-`Delete` attempts to delete all the manifest's resources in reverse
+[Delete] attempts to delete all the manifest's resources in reverse
 order. Depending on the resources' owner references, race conditions
 with the k8s garbage collector may occur, and by default `NotFound`
 errors are silently ignored.
@@ -283,7 +288,7 @@ The following functional options are supported, all except
 
 ### DryRun
 
-`DryRun` returns a list of JSON merge patches that show the effects of
+[DryRun] returns a list of JSON merge patches that show the effects of
 applying the manifest without modifying the live system. Each item in
 the returned list is valid content for the `kubectl patch` command.
 
@@ -298,7 +303,13 @@ You know the drill...
 
 [Resources]: https://godoc.org/github.com/manifestival/manifestival#Manifest.Resources
 [Source]: https://godoc.org/github.com/manifestival/manifestival#Source
+[Manifestival]: https://godoc.org/github.com/manifestival/manifestival#Manifestival
+[Append]: https://godoc.org/github.com/manifestival/manifestival#Manifest.Append
 [Filter]: https://godoc.org/github.com/manifestival/manifestival#Manifest.Filter
+[Transform]: https://godoc.org/github.com/manifestival/manifestival#Manifest.Transform
+[Apply]: https://godoc.org/github.com/manifestival/manifestival#Manifest.Apply
+[Delete]: https://godoc.org/github.com/manifestival/manifestival#Manifest.Delete
+[DryRun]: https://godoc.org/github.com/manifestival/manifestival#Manifest.DryRun
 [Predicate]: https://godoc.org/github.com/manifestival/manifestival#Predicate
 [Client]: https://godoc.org/github.com/manifestival/manifestival#Client
 [Transformer]: https://godoc.org/github.com/manifestival/manifestival#Transformer
