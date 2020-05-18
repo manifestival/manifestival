@@ -2,7 +2,6 @@ package manifestival_test
 
 import (
 	"bytes"
-	"context"
 	"io/ioutil"
 	"testing"
 
@@ -15,23 +14,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/conversion"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/kubernetes/pkg/apis/apps"
-	corev1 "k8s.io/kubernetes/pkg/apis/core/v1"
-	"k8s.io/kubernetes/pkg/registry/apps/deployment"
 )
-
-func init() {
-	corev1.AddToScheme(scheme.Scheme)
-	scheme.Scheme.AddConversionFuncs(
-		func(in *appsv1.RollingUpdateDeployment, out *apps.RollingUpdateDeployment, scope conversion.Scope) error {
-			out.MaxUnavailable = *in.MaxUnavailable
-			out.MaxSurge = *in.MaxSurge
-			return nil
-		},
-	)
-}
 
 func TestPortUpdates(t *testing.T) {
 	specBytes, _ := ioutil.ReadFile("testdata/kourier/deployment-spec.json")
@@ -46,10 +31,16 @@ func TestPortUpdates(t *testing.T) {
 	}
 	c := fake.New(edited)
 	c.Stubs.Update = func(obj *unstructured.Unstructured) error {
-		dObj := &apps.Deployment{}
-		scheme.Scheme.Convert(obj, dObj, nil)
-		if errs := deployment.Strategy.Validate(context.TODO(), dObj); len(errs) > 0 {
-			return errors.NewInvalid(obj.GroupVersionKind().GroupKind(), obj.GetName(), errs)
+		d := &appsv1.Deployment{}
+		scheme.Scheme.Convert(obj, d, nil)
+		names := sets.String{}
+		for _, port := range d.Spec.Template.Spec.Containers[0].Ports {
+			// raise error if >1 ports with same name
+			if names.Has(port.Name) {
+				return errors.NewInvalid(obj.GroupVersionKind().GroupKind(), obj.GetName(), nil)
+			} else {
+				names.Insert(port.Name)
+			}
 		}
 		return nil
 	}
