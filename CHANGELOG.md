@@ -5,8 +5,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
-### Changed
-
 ### Added
 
 - Introduced `Append` to the `Manifestival` interface. This enables
@@ -23,6 +21,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Removed
 
+- Removed dependency on `k8s.io/kubernetes`. It was only used in a
+  test, to verify a proper response to server-side validation errors,
+  but 'go modules' doesn't distinguish test-only dependencies, and
+  `k8s.io/kubernetes` was never intended to be consumed as a module,
+  so we replicated the validation logic in the test itself.
+  
 
 ## [0.5.0] - 2020-03-31
 
