@@ -111,7 +111,7 @@ func ByGVK(gvk schema.GroupVersionKind) Predicate {
 	}
 }
 
-// In returns true if present in the passed Manifest, using
+// In(m) returns a Predicate that tests for membership in m, using
 // "gvk|namespace/name" as a unique identifier
 func In(manifest Manifest) Predicate {
 	key := func(u *unstructured.Unstructured) string {
