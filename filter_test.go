@@ -175,6 +175,6 @@ func TestInFilter(t *testing.T) {
 	twelve, _ := NewManifest("testdata/k-s-v0.12.1.yaml")
 	new := twelve.Filter(None(In(eleven)))
 	if len(new.Resources()) != 1 {
-		t.Error("Missing the autoscaler-hpa")
+		t.Error("Missing the autoscaler-hpa Service")
 	}
 }
