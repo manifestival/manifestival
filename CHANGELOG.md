@@ -18,6 +18,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - More [docs](README.md), including
   [godoc](https://godoc.org/github.com/manifestival/manifestival)
   [#42](https://github.com/manifestival/manifestival/pull/42)
+- New filter `Predicate`, `In`, that returns true if a resource is in
+  a given manifest, uniquely identified by GVK, namespace, and name.
 
 ### Removed
 

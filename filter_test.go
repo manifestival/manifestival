@@ -169,3 +169,12 @@ func TestConvertFilter(t *testing.T) {
 		}
 	}
 }
+
+func TestInFilter(t *testing.T) {
+	eleven, _ := NewManifest("testdata/k-s-v0.11.0.yaml")
+	twelve, _ := NewManifest("testdata/k-s-v0.12.1.yaml")
+	new := twelve.Filter(None(In(eleven)))
+	if len(new.Resources()) != 1 {
+		t.Error("Missing the autoscaler-hpa Service")
+	}
+}
