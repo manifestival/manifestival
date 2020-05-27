@@ -2,6 +2,7 @@ package manifestival
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/go-logr/logr/testing"
@@ -9,8 +10,12 @@ import (
 	"github.com/manifestival/manifestival/patch"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
+
+const replaceTimeout = 60
 
 // Manifestival defines the operations allowed on a set of Kubernetes
 // resources (typically, a set of YAML files, aka a manifest)
@@ -143,9 +148,40 @@ func (m Manifest) update(live, spec *unstructured.Unstructured, opts ...ApplyOpt
 	if errors.IsInvalid(err) && ApplyWith(opts).Overwrite {
 		m.log.Error(err, "Failed to update merged resource, trying overwrite")
 		overlay.Copy(spec.Object, live.Object)
-		return m.Client.Update(live, opts...)
+		err = m.Client.Update(live, opts...)
+		if errors.IsInvalid(err) && ApplyWith(opts).Replace {
+			m.log.Error(err, "Failed to overwrite resource, trying replace")
+			err = m.deleteAndCreate(live, spec, opts...)
+			if errors.IsInvalid(err) {
+				m.log.Error(err, "Failed to replace.")
+			}
+		}
 	}
 	return err
+}
+
+func (m Manifest) deleteAndCreate(live, spec *unstructured.Unstructured, opts ...ApplyOption) error {
+	var timeout time.Duration
+	if ApplyWith(opts).Timeout == 0 {
+		timeout = replaceTimeout
+	} else {
+		timeout = ApplyWith(opts).Timeout
+	}
+
+	if err := m.Client.Delete(live); err != nil {
+		return err
+	}
+
+	if err := wait.PollImmediate(1*time.Second, timeout, func() (bool, error) {
+		if _, err := m.get(live); !apierrors.IsNotFound(err) {
+			return false, err
+		}
+		return true, nil
+	}); err != nil {
+		return err
+	}
+
+	return m.Client.Create(spec, opts...)
 }
 
 // delete removes the specified object

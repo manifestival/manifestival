@@ -1,6 +1,8 @@
 package manifestival
 
 import (
+	"time"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -48,6 +50,8 @@ type ApplyOptions struct {
 	ForCreate *metav1.CreateOptions
 	ForUpdate *metav1.UpdateOptions
 	Overwrite bool
+	Replace   bool
+	Timeout   time.Duration
 }
 type DeleteOptions struct {
 	ForDelete      *metav1.DeleteOptions
@@ -75,6 +79,10 @@ type IgnoreNotFound bool
 // Resolve conflicts by using values from the manifest values
 type Overwrite bool
 
+type Replace bool
+
+type Timeout time.Duration
+
 type dryRunAll struct{} // for both apply and delete
 
 func (dryRunAll) ApplyWith(opts *ApplyOptions) {
@@ -84,6 +92,15 @@ func (dryRunAll) ApplyWith(opts *ApplyOptions) {
 func (i Overwrite) ApplyWith(opts *ApplyOptions) {
 	opts.Overwrite = bool(i)
 }
+
+func (r Replace) ApplyWith(opts *ApplyOptions) {
+	opts.Replace = bool(r)
+}
+
+func (t Timeout) ApplyWith(opts *ApplyOptions) {
+	opts.Timeout = time.Duration(t)
+}
+
 func (f FieldManager) ApplyWith(opts *ApplyOptions) {
 	// TODO: The FM was introduced in k8s 1.14, but not ready to
 	// abandon pre-1.14 users yet. Uncomment when ready.
