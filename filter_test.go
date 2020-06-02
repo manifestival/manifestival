@@ -178,3 +178,38 @@ func TestInFilter(t *testing.T) {
 		t.Error("Missing the autoscaler-hpa Service")
 	}
 }
+
+func TestAnnotations(t *testing.T) {
+	manifest, _ := NewManifest("testdata/tree/file.yaml")
+	tests := []struct {
+		name       string
+		predicates []Predicate
+		count      int
+	}{{
+		name:       "No matches for specific annotation",
+		predicates: []Predicate{ByAnnotation("foo", "bar")},
+		count:      0,
+	}, {
+		name:       "No matches for any annotation",
+		predicates: []Predicate{ByAnnotation("missing", "")},
+		count:      0,
+	}, {
+		name:       "Annotation has any value",
+		predicates: []Predicate{ByAnnotation("foo", "")},
+		count:      2,
+	}, {
+		name:       "Annotation has specific value",
+		predicates: []Predicate{ByAnnotation("foo", "true")},
+		count:      1,
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			actual := manifest.Filter(test.predicates...)
+			count := len(actual.Resources())
+			if count != test.count {
+				t.Errorf("wanted %v, got %v", test.count, count)
+			}
+		})
+	}
+}

@@ -80,6 +80,18 @@ func ByKind(kind string) Predicate {
 	}
 }
 
+// ByAnnotation returns resources that contain a particular annotation
+// and value. A value of "" denotes *ANY* value
+func ByAnnotation(annotation, value string) Predicate {
+	return func(u *unstructured.Unstructured) bool {
+		v, ok := u.GetAnnotations()[annotation]
+		if value == "" {
+			return ok
+		}
+		return v == value
+	}
+}
+
 // ByLabel returns resources that contain a particular label and
 // value. A value of "" denotes *ANY* value
 func ByLabel(label, value string) Predicate {
