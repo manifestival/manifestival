@@ -116,8 +116,8 @@ creating your own:
 * `All` effectively AND's its arguments together
 * `Any` OR's its arguments together
 * `None` negates its arguments, returning false if any return true
-* `ByName`, `ByKind`, `ByLabel`, and `ByGVK` filter resources by their
-  respective attributes.
+* `ByName`, `ByKind`, `ByLabel`, `ByAnnotation`, and `ByGVK` filter
+  resources by their respective attributes.
 
 ```go
 clusterRBAC := Any(ByKind("ClusterRole"), ByKind("ClusterRoleBinding"))
