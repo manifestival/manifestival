@@ -187,6 +187,8 @@ testCases:
       kind: Deployment
       metadata:
         name: nginx-deployment
+        annotations:
+          modified: "true"
       spec:
         selector:
           matchLabels:
@@ -206,6 +208,7 @@ testCases:
       kind: Deployment
       metadata:
         annotations:
+          current: "true"
           # note that the annotation does not contain replicas
           # because it was not updated through apply
           kubectl.kubernetes.io/last-applied-configuration: |
@@ -231,6 +234,11 @@ testCases:
       kind: Deployment
       metadata:
         name: nginx-deployment # added by apply
+        annotations:
+          modified: "true"
+          current: "true"
+          kubectl.kubernetes.io/last-applied-configuration: |
+            {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"nginx-deployment","namespace":"default"},"spec":{"minReadySeconds":5,"selector":{"matchLabels":{"app":"nginx"}},"template":{"metadata":{"labels":{"app":"nginx"}},"spec":{"containers":[{"image":"nginx:1.7.9","name":"nginx","ports":[{"containerPort":80}]}]}}}}
       spec:
         selector:
           matchLabels:
