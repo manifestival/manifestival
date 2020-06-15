@@ -107,9 +107,19 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:92d83b7f3bfcba76f533a56e67739790845929e511911a634273cfd8e0fbeb72"
+  digest = "1:c381e2867d447cca3e74dbfb0c8ed371a4583c694b35838c5c642a2b79480fc6"
+  name = "golang.org/x/crypto"
+  packages = ["ssh/terminal"]
+  pruneopts = "UT"
+  revision = "70a84ac30bf957c7df57edd1935d2081871515e1"
+
+[[projects]]
+  branch = "master"
+  digest = "1:662a8c1aee3ef7598f411747b9ee82e76e3cee4974d14b12d735f6814d477a86"
   name = "golang.org/x/net"
   packages = [
+    "context",
+    "context/ctxhttp",
     "http/httpguts",
     "http2",
     "http2/hpack",
@@ -117,6 +127,29 @@
   ]
   pruneopts = "UT"
   revision = "46282727080fcf56da5781d0a9ef2fda184be5e6"
+
+[[projects]]
+  branch = "master"
+  digest = "1:911b45b658f5fab1a26259e2fd1085ab296f9d3e46117311d25f8dae51efe720"
+  name = "golang.org/x/oauth2"
+  packages = [
+    ".",
+    "internal",
+  ]
+  pruneopts = "UT"
+  revision = "bf48bf16ab8d622ce64ec6ce98d2c98f916b6303"
+
+[[projects]]
+  branch = "master"
+  digest = "1:4d150491235d37b4d56ef26d2e1387a872cc837445eb2cc4735e3e9786c5eb06"
+  name = "golang.org/x/sys"
+  packages = [
+    "internal/unsafeheader",
+    "unix",
+    "windows",
+  ]
+  pruneopts = "UT"
+  revision = "2780627062e0546309b53cd69477a44f3d8629d1"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
@@ -142,6 +175,30 @@
   pruneopts = "UT"
   revision = "342b2e1fbaa52c93f31447ad2c6abc048c63e475"
   version = "v0.3.2"
+
+[[projects]]
+  branch = "master"
+  digest = "1:908ad1a739c1afa54078eec5dc8a56b8ed01c0576b52ca61600471682fce4c33"
+  name = "golang.org/x/time"
+  packages = ["rate"]
+  pruneopts = "UT"
+  revision = "89c76fbcd5d1cd4969e5d2fe19d48b19d5ad94a0"
+
+[[projects]]
+  digest = "1:15bbb120d95283019f8891f2762fab3e735075b2cf9b378497277d2fe6c4abca"
+  name = "google.golang.org/appengine"
+  packages = [
+    "internal",
+    "internal/base",
+    "internal/datastore",
+    "internal/log",
+    "internal/remote_api",
+    "internal/urlfetch",
+    "urlfetch",
+  ]
+  pruneopts = "UT"
+  revision = "553959209a20f3be281c16dd5be5c740a893978f"
+  version = "v1.6.6"
 
 [[projects]]
   digest = "1:2d1fbdc6777e5408cabeb02bf336305e724b925ff4546ded0fa8715a7267922a"
@@ -205,10 +262,11 @@
   version = "kubernetes-1.15.4"
 
 [[projects]]
-  digest = "1:3ff6c70b1141708359606adc3c9750610db552a0dfc2075612ae04081041677f"
+  digest = "1:e0dad81c7448a8c8f39280f5dacd2921b72953e164549738d792345c15d250b9"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/errors",
+    "pkg/api/meta",
     "pkg/api/resource",
     "pkg/apis/meta/v1",
     "pkg/apis/meta/v1/unstructured",
@@ -222,9 +280,11 @@
     "pkg/runtime/serializer/json",
     "pkg/runtime/serializer/protobuf",
     "pkg/runtime/serializer/recognizer",
+    "pkg/runtime/serializer/streaming",
     "pkg/runtime/serializer/versioning",
     "pkg/selection",
     "pkg/types",
+    "pkg/util/clock",
     "pkg/util/errors",
     "pkg/util/framer",
     "pkg/util/intstr",
@@ -239,6 +299,7 @@
     "pkg/util/validation",
     "pkg/util/validation/field",
     "pkg/util/yaml",
+    "pkg/version",
     "pkg/watch",
     "third_party/forked/golang/json",
     "third_party/forked/golang/reflect",
@@ -248,9 +309,28 @@
   version = "kubernetes-1.15.4"
 
 [[projects]]
-  digest = "1:51c12c1a40d1eb166ef63470e0a3f15e6564d70aef537b978f8a7f09e227ef72"
+  digest = "1:27e37d5f220617fdfbd56b7f7ce3af5f0522ff5e57135915c458e973941404c7"
   name = "k8s.io/client-go"
-  packages = ["kubernetes/scheme"]
+  packages = [
+    "dynamic",
+    "dynamic/fake",
+    "kubernetes/scheme",
+    "pkg/apis/clientauthentication",
+    "pkg/apis/clientauthentication/v1alpha1",
+    "pkg/apis/clientauthentication/v1beta1",
+    "pkg/version",
+    "plugin/pkg/client/auth/exec",
+    "rest",
+    "rest/watch",
+    "testing",
+    "tools/clientcmd/api",
+    "tools/metrics",
+    "transport",
+    "util/cert",
+    "util/connrotation",
+    "util/flowcontrol",
+    "util/keyutil",
+  ]
   pruneopts = "UT"
   revision = "78d2af792babf2dd937ba2e2a8d99c753a5eda89"
   version = "v12.0.0"
@@ -272,6 +352,14 @@
   revision = "addea2498afe5a6d58f8bdcd9ae51363d12f12ef"
 
 [[projects]]
+  branch = "master"
+  digest = "1:8a5e4720aca8a94c876d960a2b86afcaf98e8ded4b5bd7fe42d920806b292c57"
+  name = "k8s.io/utils"
+  packages = ["integer"]
+  pruneopts = "UT"
+  revision = "c1c6865ac45113491fd8207923d28d4bcff03a88"
+
+[[projects]]
   digest = "1:36d2b2cb1fa6e4a731e38c3582c203213cdbc52c5f202af07db6dc6eeaec88dc"
   name = "sigs.k8s.io/yaml"
   packages = ["."]
@@ -289,6 +377,7 @@
     "k8s.io/api/apps/v1",
     "k8s.io/api/core/v1",
     "k8s.io/apimachinery/pkg/api/errors",
+    "k8s.io/apimachinery/pkg/api/meta",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured",
     "k8s.io/apimachinery/pkg/runtime",
@@ -297,6 +386,8 @@
     "k8s.io/apimachinery/pkg/util/sets",
     "k8s.io/apimachinery/pkg/util/strategicpatch",
     "k8s.io/apimachinery/pkg/util/yaml",
+    "k8s.io/client-go/dynamic",
+    "k8s.io/client-go/dynamic/fake",
     "k8s.io/client-go/kubernetes/scheme",
     "sigs.k8s.io/yaml",
   ]

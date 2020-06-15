@@ -244,6 +244,20 @@ modified, _ := NewManifest("testdata/modified.yaml", UseClient(client))
 diffs, err := modified.DryRun()
 ```
 
+#### fake.DynamicClient
+
+The [fake] package includes a fake `Client` backed by a kubernets dynamic client for use in your unit tests. For example,
+
+```go
+func verifySomething(t *testing.T) {
+    // create k8s dynamic client:
+    kfdc := fake.NewSimpleDynamicClient(scheme, objects...)
+    client := fake.NewFakeDynamicClient(kfdc)
+    manifest, _ := NewManifest("testdata/some.yaml", UseClient(client))
+    callSomethingThatUltimatelyAppliesThis(manifest)
+}
+```
+
 ### Logging
 
 By default, Manifestival logs nothing, but it will happily log its
