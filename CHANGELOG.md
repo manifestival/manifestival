@@ -7,9 +7,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Changed
 
-- Migrated from [dep][https://github.com/golang/dep] to [go
+- Migrated from [dep](https://github.com/golang/dep) to [go
   modules](https://blog.golang.org/using-go-modules)
   [#47](https://github.com/manifestival/manifestival/pull/47)
+- Restored `FieldManager` option for creates and updates, essentially
+  reverting [#17](https://github.com/manifestival/manifestival/issues/17).
+  [#26](https://github.com/manifestival/manifestival/issues/26)
 
 ### Added
 
