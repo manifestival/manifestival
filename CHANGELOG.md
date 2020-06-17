@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+### Changed
+
+- Migrated from [dep][https://github.com/golang/dep] to [go
+  modules](https://blog.golang.org/using-go-modules)
+  [#47](https://github.com/manifestival/manifestival/pull/47)
+
 ### Added
 
 - Introduced `Append` to the `Manifestival` interface. This enables

@@ -25,7 +25,6 @@ See [CHANGELOG.md](CHANGELOG.md)
   * [Apply](#apply)
   * [Delete](#delete)
   * [DryRun](#dryrun)
-* [Development](#development)
 
 
 ## Creating Manifests
@@ -291,14 +290,6 @@ The following functional options are supported, all except
 [DryRun] returns a list of JSON merge patches that show the effects of
 applying the manifest without modifying the live system. Each item in
 the returned list is valid content for the `kubectl patch` command.
-
-
-## Development
-
-You know the drill...
-
-    dep ensure -v
-    go test -v ./...
 
 
 [Resources]: https://godoc.org/github.com/manifestival/manifestival#Manifest.Resources
