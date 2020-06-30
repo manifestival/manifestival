@@ -132,7 +132,6 @@ func (m Manifest) apply(spec *unstructured.Unstructured, opts ...ApplyOption) er
 		}
 		return m.update(current, spec, opts...)
 	}
-	return nil
 }
 
 // update a single resource
