@@ -30,21 +30,21 @@ func (m Manifest) Filter(preds ...Predicate) Manifest {
 
 // And returns true iff all of the predicates are true
 func And(pred Predicate, pred2 Predicate, preds ...Predicate) Predicate {
-        return All(append([]Predicate{pred, pred2}, preds...)...)
+	return All(append([]Predicate{pred, pred2}, preds...)...)
 }
 
 // All returns true iff all of the predicates are true
 //
 // Deprecated: Use And instead to avoid confusion caused by the no/one-arg case.
 func All(preds ...Predicate) Predicate {
-        return func(u *unstructured.Unstructured) bool {
-                for _, p := range preds {
-                        if !p(u) {
-                                return false
-                        }
-                }
-                return true
-        }
+	return func(u *unstructured.Unstructured) bool {
+		for _, p := range preds {
+			if !p(u) {
+				return false
+			}
+		}
+		return true
+	}
 }
 
 // Or returns true iff any of the predicates are true
@@ -68,7 +68,7 @@ func Any(preds ...Predicate) Predicate {
 
 // Not returns the complement of a given predicate.
 func Not(pred Predicate) Predicate {
-        return None(pred)
+	return None(pred)
 }
 
 // None returns true iff none of the preds are true,
