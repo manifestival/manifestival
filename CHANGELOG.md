@@ -7,6 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Changed
 
+- Deprecated All/And/None for replacements that are less variadic (All/Or
+  which require at least two arguments, and Not which accepts only one).
+  These will be removed in a few releases.
 - Migrated from [dep](https://github.com/golang/dep) to [go
   modules](https://blog.golang.org/using-go-modules)
   [#47](https://github.com/manifestival/manifestival/pull/47)
