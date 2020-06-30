@@ -15,7 +15,7 @@ func True(_ *unstructured.Unstructured) bool {
 	return true
 }
 
-var False = None(True)
+var False = None()
 
 func TestFilter(t *testing.T) {
 	manifest, _ := NewManifest("testdata/k-s-v0.12.1.yaml")
@@ -94,6 +94,30 @@ func TestFilter(t *testing.T) {
 	}, {
 		name:       "None, both false",
 		predicates: []Predicate{None(False, False)},
+		count:      55,
+	}, {
+		name:       "And, first true then false",
+		predicates: []Predicate{And(True, False)},
+		count:      0,
+	}, {
+		name:       "And, first false then true",
+		predicates: []Predicate{And(False, True)},
+		count:      0,
+	}, {
+		name:       "And, both true",
+		predicates: []Predicate{And(True, True)},
+		count:      55,
+	}, {
+		name:       "And, both false",
+		predicates: []Predicate{And(False, False)},
+		count:      0,
+	}, {
+		name:       "Not true",
+		predicates: []Predicate{Not(True)},
+		count:      0,
+	}, {
+		name:       "Not false",
+		predicates: []Predicate{Not(False)},
 		count:      55,
 	}, {
 		name:       "One match By GVK",

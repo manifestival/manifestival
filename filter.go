@@ -28,19 +28,33 @@ func (m Manifest) Filter(preds ...Predicate) Manifest {
 	return result
 }
 
-// All returns true iff all predicates are true
+// And returns true iff all of the predicates are true
+func And(pred Predicate, pred2 Predicate, preds ...Predicate) Predicate {
+        return All(append([]Predicate{pred, pred2}, preds...)...)
+}
+
+// All returns true iff all of the predicates are true
+//
+// Deprecated: Use And instead to avoid confusion caused by the no/one-arg case.
 func All(preds ...Predicate) Predicate {
-	return func(u *unstructured.Unstructured) bool {
-		for _, p := range preds {
-			if !p(u) {
-				return false
-			}
-		}
-		return true
-	}
+        return func(u *unstructured.Unstructured) bool {
+                for _, p := range preds {
+                        if !p(u) {
+                                return false
+                        }
+                }
+                return true
+        }
+}
+
+// Or returns true iff any of the predicates are true
+func Or(pred Predicate, pred2 Predicate, preds ...Predicate) Predicate {
+	return Any(append([]Predicate{pred, pred2}, preds...)...)
 }
 
 // Any returns true iff any of the predicates are true
+//
+// Deprecated: Use Or instead to avoid confusion caused by the no/one-arg case.
 func Any(preds ...Predicate) Predicate {
 	return func(u *unstructured.Unstructured) bool {
 		for _, p := range preds {
@@ -52,9 +66,22 @@ func Any(preds ...Predicate) Predicate {
 	}
 }
 
-// None returns true iff none of the preds are true
+// Not returns the complement of a given predicate.
+func Not(pred Predicate) Predicate {
+        return None(pred)
+}
+
+// None returns true iff none of the preds are true,
+// or if no preds are passed in.
+//
+// Deprecated: Due to implicit Any() and confusing no-arg case. Prefer Not.
 func None(preds ...Predicate) Predicate {
-	p := Any(preds...)
+	var p Predicate = nil
+	if len(preds) == 0 {
+		p = All()
+	} else {
+		p = Any(preds...)
+	}
 	return func(u *unstructured.Unstructured) bool {
 		return !p(u)
 	}
