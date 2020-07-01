@@ -122,9 +122,9 @@ creating your own:
   resources by their respective attributes.
 
 ```go
-clusterRBAC := Or(ByKind("ClusterRole"), ByKind("ClusterRoleBinding"))
-namespaceRBAC := Or(ByKind("Role"), ByKind("RoleBinding"))
-rbac := Or(clusterRBAC, namespaceRBAC)
+clusterRBAC := Any(ByKind("ClusterRole"), ByKind("ClusterRoleBinding"))
+namespaceRBAC := Any(ByKind("Role"), ByKind("RoleBinding"))
+rbac := Any(clusterRBAC, namespaceRBAC)
 
 theRBAC := manifest.Filter(rbac)
 theRest := manifest.Filter(Not(rbac))
