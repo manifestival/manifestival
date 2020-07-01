@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Changed
 
-- None was removed and replaced with Not, which only accepts a single
+- `None` was removed and replaced with `Not`, which only accepts a single
   predicate.
 - Any/All/Filter now require at least one predicate to avoid
   base cases which may be unexpected.
