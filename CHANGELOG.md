@@ -7,10 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Changed
 
-- `None` was removed and replaced with `Not`, which only accepts a single
-  predicate.
-- Any/All/Filter now require at least one predicate to avoid
-  base cases which may be unexpected.
+- Split up the manifestival package into multiple sub-packages in an
+  effort to clean up the top-level namespace. The directory structure
+  beneath `pkg/` is a little easier to navigate now.
 - Migrated from [dep](https://github.com/golang/dep) to [go
   modules](https://blog.golang.org/using-go-modules)
   [#47](https://github.com/manifestival/manifestival/pull/47)
@@ -20,6 +19,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - Fixed the `InjectNamespace` transformer to properly update the
   `spec.conversion` field in a `CustomResourceDefinition`
   [#55](https://github.com/manifestival/manifestival/issues/55)
+- `None` was removed and replaced with `Not`, which only accepts a single
+  predicate.
+- `Any` and `All` now require at least one predicate since it wasn't
+  clear how they should behave without one.
 
 ### Added
 
