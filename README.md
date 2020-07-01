@@ -109,13 +109,15 @@ which _all_ passed predicates return true. A [Predicate] is a function
 that takes an `Unstructured` resource and returns a bool indicating
 whether the resource should be included in the filtered results.
 
+At least one predicate must be provided for filtering.
+
 There are a few built-in predicates and some helper functions for
 creating your own:
 
-* `And` effectively AND's its arguments together (you must provide >=2
+* `All` effectively AND's its arguments together (you must provide >=1
   arguments).
-* `Or` OR's its arguments together (you must provide >=2 arguments).
-* `Not` negates its arguments, returning false if its argument returns true
+* `Any` OR's its arguments together (you must provide >=1 arguments).
+* `Not` negates its argument, returning false if its argument returns true
 * `ByName`, `ByKind`, `ByLabel`, `ByAnnotation`, and `ByGVK` filter
   resources by their respective attributes.
 

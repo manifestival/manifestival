@@ -11,16 +11,21 @@ import (
 // Predicate returns true if u should be included in result
 type Predicate func(u *unstructured.Unstructured) bool
 
+var (
+	Everything = func(u *unstructured.Unstructured) bool { return true }
+	Nothing = Not(Everything)
+)
+
 // Filter returns a Manifest containing only the resources for which
 // *all* Predicates return true. Any changes callers make to the
 // resources passed to their Predicate[s] will only be reflected in
 // the returned Manifest.
-func (m Manifest) Filter(preds ...Predicate) Manifest {
+func (m Manifest) Filter(pred Predicate, preds ...Predicate) Manifest {
 	result := m
 	result.resources = []unstructured.Unstructured{}
-	pred := All(preds...)
+	all := All(pred, preds...)
 	for _, spec := range m.Resources() {
-		if !pred(&spec) {
+		if !all(&spec) {
 			continue
 		}
 		result.resources = append(result.resources, spec)
@@ -28,17 +33,10 @@ func (m Manifest) Filter(preds ...Predicate) Manifest {
 	return result
 }
 
-// And returns true iff all of the predicates are true
-func And(pred Predicate, pred2 Predicate, preds ...Predicate) Predicate {
-	return All(append([]Predicate{pred, pred2}, preds...)...)
-}
-
 // All returns true iff all of the predicates are true
-//
-// Deprecated: Use And instead to avoid confusion caused by the no/one-arg case.
-func All(preds ...Predicate) Predicate {
+func All(pred Predicate, preds ...Predicate) Predicate {
 	return func(u *unstructured.Unstructured) bool {
-		for _, p := range preds {
+		for _, p := range append([]Predicate{ pred },  preds...) {
 			if !p(u) {
 				return false
 			}
@@ -47,17 +45,10 @@ func All(preds ...Predicate) Predicate {
 	}
 }
 
-// Or returns true iff any of the predicates are true
-func Or(pred Predicate, pred2 Predicate, preds ...Predicate) Predicate {
-	return Any(append([]Predicate{pred, pred2}, preds...)...)
-}
-
 // Any returns true iff any of the predicates are true
-//
-// Deprecated: Use Or instead to avoid confusion caused by the no/one-arg case.
-func Any(preds ...Predicate) Predicate {
+func Any(pred Predicate, preds ...Predicate) Predicate {
 	return func(u *unstructured.Unstructured) bool {
-		for _, p := range preds {
+		for _, p := range append([]Predicate{ pred }, preds...) {
 			if p(u) {
 				return true
 			}
@@ -68,22 +59,8 @@ func Any(preds ...Predicate) Predicate {
 
 // Not returns the complement of a given predicate.
 func Not(pred Predicate) Predicate {
-	return None(pred)
-}
-
-// None returns true iff none of the preds are true,
-// or if no preds are passed in.
-//
-// Deprecated: Due to implicit Any() and confusing no-arg case. Prefer Not.
-func None(preds ...Predicate) Predicate {
-	var p Predicate = nil
-	if len(preds) == 0 {
-		p = All()
-	} else {
-		p = Any(preds...)
-	}
 	return func(u *unstructured.Unstructured) bool {
-		return !p(u)
+		return !pred(u)
 	}
 }
 
@@ -91,7 +68,7 @@ func None(preds ...Predicate) Predicate {
 var CRDs = ByKind("CustomResourceDefinition")
 
 // NoCRDs returns no CustomResourceDefinitions
-var NoCRDs = None(CRDs)
+var NoCRDs = Not(CRDs)
 
 // ByName returns resources with a specifc name
 func ByName(name string) Predicate {

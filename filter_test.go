@@ -15,7 +15,7 @@ func True(_ *unstructured.Unstructured) bool {
 	return true
 }
 
-var False = None()
+var False = Not(True)
 
 func TestFilter(t *testing.T) {
 	manifest, _ := NewManifest("testdata/k-s-v0.12.1.yaml")
@@ -24,10 +24,14 @@ func TestFilter(t *testing.T) {
 		predicates []Predicate
 		count      int
 	}{{
-		name:       "No predicates",
-		predicates: []Predicate{},
-		count:      55,
-	}, {
+                name:       "Nothing",
+                predicates: []Predicate{Nothing},
+                count:      0,
+        }, {
+                name:       "Everything",
+                predicates: []Predicate{Everything},
+                count:      55,
+        }, {
 		name:       "No matches for label",
 		predicates: []Predicate{ByLabel("foo", "bar")},
 		count:      0,
@@ -80,38 +84,6 @@ func TestFilter(t *testing.T) {
 		predicates: []Predicate{Any(False, False)},
 		count:      0,
 	}, {
-		name:       "None, first true then false",
-		predicates: []Predicate{None(True, False)},
-		count:      0,
-	}, {
-		name:       "None, first false then true",
-		predicates: []Predicate{None(False, True)},
-		count:      0,
-	}, {
-		name:       "None, both true",
-		predicates: []Predicate{None(True, True)},
-		count:      0,
-	}, {
-		name:       "None, both false",
-		predicates: []Predicate{None(False, False)},
-		count:      55,
-	}, {
-		name:       "And, first true then false",
-		predicates: []Predicate{And(True, False)},
-		count:      0,
-	}, {
-		name:       "And, first false then true",
-		predicates: []Predicate{And(False, True)},
-		count:      0,
-	}, {
-		name:       "And, both true",
-		predicates: []Predicate{And(True, True)},
-		count:      55,
-	}, {
-		name:       "And, both false",
-		predicates: []Predicate{And(False, False)},
-		count:      0,
-	}, {
 		name:       "Not true",
 		predicates: []Predicate{Not(True)},
 		count:      0,
@@ -139,7 +111,9 @@ func TestFilter(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			actual := manifest.Filter(test.predicates...)
+			pred := test.predicates[0]
+			preds := test.predicates[1:]
+			actual := manifest.Filter(pred, preds...)
 			count := len(actual.Resources())
 			if count != test.count {
 				t.Errorf("wanted %v, got %v", test.count, count)
@@ -197,7 +171,7 @@ func TestConvertFilter(t *testing.T) {
 func TestInFilter(t *testing.T) {
 	eleven, _ := NewManifest("testdata/k-s-v0.11.0.yaml")
 	twelve, _ := NewManifest("testdata/k-s-v0.12.1.yaml")
-	new := twelve.Filter(None(In(eleven)))
+	new := twelve.Filter(Not(In(eleven)))
 	if len(new.Resources()) != 1 {
 		t.Error("Missing the autoscaler-hpa Service")
 	}
@@ -229,7 +203,9 @@ func TestAnnotations(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			actual := manifest.Filter(test.predicates...)
+			pred := test.predicates[0]
+			preds := test.predicates[1:]
+			actual := manifest.Filter(pred, preds...)
 			count := len(actual.Resources())
 			if count != test.count {
 				t.Errorf("wanted %v, got %v", test.count, count)
