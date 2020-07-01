@@ -109,12 +109,15 @@ which _all_ passed predicates return true. A [Predicate] is a function
 that takes an `Unstructured` resource and returns a bool indicating
 whether the resource should be included in the filtered results.
 
+At least one predicate must be provided for filtering.
+
 There are a few built-in predicates and some helper functions for
 creating your own:
 
-* `All` effectively AND's its arguments together
-* `Any` OR's its arguments together
-* `None` negates its arguments, returning false if any return true
+* `All` effectively AND's its arguments together (you must provide >=1
+  arguments).
+* `Any` OR's its arguments together (you must provide >=1 arguments).
+* `Not` negates its argument, returning false if its argument returns true
 * `ByName`, `ByKind`, `ByLabel`, `ByAnnotation`, and `ByGVK` filter
   resources by their respective attributes.
 
@@ -124,7 +127,7 @@ namespaceRBAC := Any(ByKind("Role"), ByKind("RoleBinding"))
 rbac := Any(clusterRBAC, namespaceRBAC)
 
 theRBAC := manifest.Filter(rbac)
-theRest := manifest.Filter(None(rbac))
+theRest := manifest.Filter(Not(rbac))
 
 // Find all resources named "controller" w/label 'foo=bar' that aren't CRD's
 m := manifest.Filter(ByLabel("foo", "bar"), ByName("controller"), NoCRDs)

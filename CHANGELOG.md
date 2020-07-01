@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Changed
 
+- `None` was removed and replaced with `Not`, which only accepts a single
+  predicate.
+- Any/All/Filter now require at least one predicate to avoid
+  base cases which may be unexpected.
 - Migrated from [dep](https://github.com/golang/dep) to [go
   modules](https://blog.golang.org/using-go-modules)
   [#47](https://github.com/manifestival/manifestival/pull/47)
