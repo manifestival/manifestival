@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	. "github.com/manifestival/manifestival"
+	. "github.com/manifestival/manifestival/pkg/sources"
 )
 
 func TestFromReader(t *testing.T) {

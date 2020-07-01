@@ -9,6 +9,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 
 	. "github.com/manifestival/manifestival"
+	. "github.com/manifestival/manifestival/pkg/filter"
 )
 
 func True(_ *unstructured.Unstructured) bool {
@@ -24,14 +25,14 @@ func TestFilter(t *testing.T) {
 		predicates []Predicate
 		count      int
 	}{{
-                name:       "Nothing",
-                predicates: []Predicate{Nothing},
-                count:      0,
-        }, {
-                name:       "Everything",
-                predicates: []Predicate{Everything},
-                count:      55,
-        }, {
+		name:       "Nothing",
+		predicates: []Predicate{Nothing},
+		count:      0,
+	}, {
+		name:       "Everything",
+		predicates: []Predicate{Everything},
+		count:      55,
+	}, {
 		name:       "No matches for label",
 		predicates: []Predicate{ByLabel("foo", "bar")},
 		count:      0,
@@ -111,9 +112,7 @@ func TestFilter(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			pred := test.predicates[0]
-			preds := test.predicates[1:]
-			actual := manifest.Filter(pred, preds...)
+			actual := manifest.Filter(test.predicates...)
 			count := len(actual.Resources())
 			if count != test.count {
 				t.Errorf("wanted %v, got %v", test.count, count)
@@ -171,14 +170,14 @@ func TestConvertFilter(t *testing.T) {
 func TestInFilter(t *testing.T) {
 	eleven, _ := NewManifest("testdata/k-s-v0.11.0.yaml")
 	twelve, _ := NewManifest("testdata/k-s-v0.12.1.yaml")
-	new := twelve.Filter(Not(In(eleven)))
+	new := twelve.Filter(Not(In(eleven.Resources())))
 	if len(new.Resources()) != 1 {
 		t.Error("Missing the autoscaler-hpa Service")
 	}
 }
 
 func TestAnnotations(t *testing.T) {
-	manifest, _ := NewManifest("testdata/tree/file.yaml")
+	manifest, _ := NewManifest("testdata/annotations.yaml")
 	tests := []struct {
 		name       string
 		predicates []Predicate
@@ -203,9 +202,7 @@ func TestAnnotations(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			pred := test.predicates[0]
-			preds := test.predicates[1:]
-			actual := manifest.Filter(pred, preds...)
+			actual := manifest.Filter(test.predicates...)
 			count := len(actual.Resources())
 			if count != test.count {
 				t.Errorf("wanted %v, got %v", test.count, count)

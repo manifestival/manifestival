@@ -5,6 +5,9 @@ import (
 	"testing"
 
 	. "github.com/manifestival/manifestival"
+	. "github.com/manifestival/manifestival/pkg/filter"
+	. "github.com/manifestival/manifestival/pkg/sources"
+	. "github.com/manifestival/manifestival/pkg/transform"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -194,6 +197,9 @@ func TestInjectNamespaceCRD(t *testing.T) {
 
 func TestConvertTransform(t *testing.T) {
 	manifest, _ := NewManifest("testdata/k-s-v0.12.1.yaml")
+	if len(manifest.Resources()) == 0 {
+		t.Error("Failed to read resources")
+	}
 	transformer := func(u *unstructured.Unstructured) error {
 		if u.GetKind() == "ConfigMap" {
 			cm := &v1.ConfigMap{}

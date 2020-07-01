@@ -7,21 +7,22 @@ import (
 	"testing"
 
 	. "github.com/manifestival/manifestival"
-	"github.com/manifestival/manifestival/fake"
+	"github.com/manifestival/manifestival/pkg/fake"
+	. "github.com/manifestival/manifestival/pkg/filter"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 func TestDryRun(t *testing.T) {
 	client := fake.New()
-	current, _ := NewManifest("testdata/dry/current.yaml", UseClient(client))
+	current, _ := NewManifest("testdata/current.yaml", UseClient(client))
 	current.Apply()
-	modified, _ := NewManifest("testdata/dry/modified.yaml", UseClient(client))
+	modified, _ := NewManifest("testdata/modified.yaml", UseClient(client))
 	diffs, err := modified.DryRun()
 	if err != nil {
 		t.Error(err)
 	}
 	actual, _ := json.MarshalIndent(diffs, "", "  ")
-	expect, _ := ioutil.ReadFile("testdata/dry/expected.json")
+	expect, _ := ioutil.ReadFile("testdata/expected.json")
 	expect = bytes.TrimSpace(expect)
 	if !bytes.Equal(actual, expect) {
 		t.Errorf("Wrong patch! Expected:\n%s\nGot:\n%s", string(expect), string(actual))
@@ -30,7 +31,7 @@ func TestDryRun(t *testing.T) {
 
 func TestNothingChanged(t *testing.T) {
 	client := fake.New()
-	current, _ := NewManifest("testdata/dry/current.yaml", UseClient(client))
+	current, _ := NewManifest("testdata/current.yaml", UseClient(client))
 	current.Apply()
 	diffs, err := current.DryRun()
 	if err != nil {

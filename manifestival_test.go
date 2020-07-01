@@ -7,7 +7,11 @@ import (
 
 	logr "github.com/go-logr/logr/testing"
 	. "github.com/manifestival/manifestival"
-	"github.com/manifestival/manifestival/fake"
+	. "github.com/manifestival/manifestival/pkg/client"
+	"github.com/manifestival/manifestival/pkg/fake"
+	. "github.com/manifestival/manifestival/pkg/filter"
+	. "github.com/manifestival/manifestival/pkg/sources"
+	. "github.com/manifestival/manifestival/pkg/transform"
 
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Foo
+metadata:
+  name: a
+  annotations:
+    foo: "true"
+---
+apiVersion: v1
+kind: Bar
+metadata:
+  name: b
+  annotations:
+    foo: "false"
