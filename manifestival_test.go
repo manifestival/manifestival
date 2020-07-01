@@ -44,7 +44,7 @@ func TestPortUpdates(t *testing.T) {
 		}
 		return nil
 	}
-	manifest, _ := ManifestFrom(Slice([]unstructured.Unstructured{*spec}), UseClient(c), UseLogger(logr.TestLogger{T: t}))
+	manifest, _ := ManifestFrom(Slice([]unstructured.Unstructured{*spec}), UseClient(c))
 	if err := manifest.Apply(Overwrite(false)); err == nil {
 		t.Error("Should have received an invalid error")
 	}
