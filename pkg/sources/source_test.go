@@ -1,4 +1,4 @@
-package manifestival_test
+package sources_test
 
 import (
 	"bytes"

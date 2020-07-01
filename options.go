@@ -1,6 +1,9 @@
 package manifestival
 
-import "github.com/go-logr/logr"
+import (
+	"github.com/go-logr/logr"
+	"github.com/manifestival/manifestival/pkg/client"
+)
 
 type Option func(*Manifest)
 
@@ -12,7 +15,7 @@ func UseLogger(log logr.Logger) Option {
 }
 
 // UseClient enables interaction with the k8s API server
-func UseClient(client Client) Option {
+func UseClient(client client.Client) Option {
 	return func(m *Manifest) {
 		m.Client = client
 	}

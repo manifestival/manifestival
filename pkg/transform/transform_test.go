@@ -1,4 +1,4 @@
-package manifestival_test
+package transform_test
 
 import (
 	"os"

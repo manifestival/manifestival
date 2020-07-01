@@ -3,7 +3,7 @@ package fake
 import (
 	"fmt"
 
-	mf "github.com/manifestival/manifestival"
+	mf "github.com/manifestival/manifestival/pkg/client"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"

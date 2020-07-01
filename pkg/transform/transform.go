@@ -1,4 +1,4 @@
-package manifestival
+package transform
 
 import (
 	"os"
@@ -18,22 +18,21 @@ type Owner interface {
 	schema.ObjectKind
 }
 
-// Transform applies an ordered set of Transformer functions to the
-// `Resources` in this Manifest.  If an error occurs, no resources are
-// transformed.
-func (m Manifest) Transform(fns ...Transformer) (Manifest, error) {
-	result := m
-	result.resources = m.Resources() // deep copies
-	for i := range result.resources {
-		spec := &result.resources[i]
+// Transform returns the result of applying an ordered set of
+// Transformer functions to deep copies of the passed `Resources`
+func Transform(src []unstructured.Unstructured, fns ...Transformer) ([]unstructured.Unstructured, error) {
+	result := []unstructured.Unstructured{}
+	for _, spec := range src {
+		spec = *spec.DeepCopy()
 		for _, transform := range fns {
 			if transform != nil {
-				err := transform(spec)
+				err := transform(&spec)
 				if err != nil {
-					return Manifest{}, err
+					return result, err
 				}
 			}
 		}
+		result = append(result, spec)
 	}
 	return result, nil
 }

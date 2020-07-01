@@ -1,4 +1,4 @@
-package manifestival
+package filter
 
 import (
 	"fmt"
@@ -13,22 +13,25 @@ type Predicate func(u *unstructured.Unstructured) bool
 
 var (
 	Everything = func(u *unstructured.Unstructured) bool { return true }
-	Nothing = Not(Everything)
+	Nothing    = Not(Everything)
 )
 
-// Filter returns a Manifest containing only the resources for which
-// *all* Predicates return true. Any changes callers make to the
-// resources passed to their Predicate[s] will only be reflected in
-// the returned Manifest.
-func (m Manifest) Filter(pred Predicate, preds ...Predicate) Manifest {
-	result := m
-	result.resources = []unstructured.Unstructured{}
-	all := All(pred, preds...)
-	for _, spec := range m.Resources() {
-		if !all(&spec) {
+// Filter returns only the resources for which *all* Predicates return
+// true. Deep copies of each src item are passed to the predicates so
+// any potential Predicate mutations will only be reflected in the
+// returned items
+func Filter(src []unstructured.Unstructured, preds ...Predicate) []unstructured.Unstructured {
+	result := []unstructured.Unstructured{}
+	pred := Everything
+	if len(preds) > 0 {
+		pred = All(preds[0], preds[1:]...)
+	}
+	for _, spec := range src {
+		spec = *spec.DeepCopy()
+		if !pred(&spec) {
 			continue
 		}
-		result.resources = append(result.resources, spec)
+		result = append(result, spec)
 	}
 	return result
 }
@@ -36,7 +39,7 @@ func (m Manifest) Filter(pred Predicate, preds ...Predicate) Manifest {
 // All returns true iff all of the predicates are true
 func All(pred Predicate, preds ...Predicate) Predicate {
 	return func(u *unstructured.Unstructured) bool {
-		for _, p := range append([]Predicate{ pred },  preds...) {
+		for _, p := range append([]Predicate{pred}, preds...) {
 			if !p(u) {
 				return false
 			}
@@ -48,7 +51,7 @@ func All(pred Predicate, preds ...Predicate) Predicate {
 // Any returns true iff any of the predicates are true
 func Any(pred Predicate, preds ...Predicate) Predicate {
 	return func(u *unstructured.Unstructured) bool {
-		for _, p := range append([]Predicate{ pred }, preds...) {
+		for _, p := range append([]Predicate{pred}, preds...) {
 			if p(u) {
 				return true
 			}
@@ -129,12 +132,12 @@ func ByGVK(gvk schema.GroupVersionKind) Predicate {
 
 // In(m) returns a Predicate that tests for membership in m, using
 // "gvk|namespace/name" as a unique identifier
-func In(manifest Manifest) Predicate {
+func In(src []unstructured.Unstructured) Predicate {
 	key := func(u *unstructured.Unstructured) string {
 		return fmt.Sprintf("%s|%s/%s", u.GroupVersionKind(), u.GetNamespace(), u.GetName())
 	}
 	index := sets.NewString()
-	for _, u := range manifest.resources {
+	for _, u := range src {
 		index.Insert(key(&u))
 	}
 	return func(u *unstructured.Unstructured) bool {

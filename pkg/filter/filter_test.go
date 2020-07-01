@@ -1,4 +1,4 @@
-package manifestival_test
+package filter_test
 
 import (
 	"testing"
