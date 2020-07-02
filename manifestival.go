@@ -5,8 +5,8 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/go-logr/logr/testing"
-	"github.com/manifestival/manifestival/overlay"
-	"github.com/manifestival/manifestival/patch"
+	"github.com/manifestival/manifestival/internal/overlay"
+	"github.com/manifestival/manifestival/internal/patch"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"

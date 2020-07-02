@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/manifestival/manifestival/overlay"
+	"github.com/manifestival/manifestival/internal/overlay"
 	"sigs.k8s.io/yaml"
 )
 
