@@ -13,19 +13,22 @@ type Predicate func(u *unstructured.Unstructured) bool
 
 var (
 	Everything = func(u *unstructured.Unstructured) bool { return true }
-	Nothing = Not(Everything)
+	Nothing    = Not(Everything)
 )
 
 // Filter returns a Manifest containing only the resources for which
 // *all* Predicates return true. Any changes callers make to the
 // resources passed to their Predicate[s] will only be reflected in
 // the returned Manifest.
-func (m Manifest) Filter(pred Predicate, preds ...Predicate) Manifest {
+func (m Manifest) Filter(preds ...Predicate) Manifest {
 	result := m
 	result.resources = []unstructured.Unstructured{}
-	all := All(pred, preds...)
+	pred := Everything
+	if len(preds) > 0 {
+		pred = All(preds[0], preds[1:]...)
+	}
 	for _, spec := range m.Resources() {
-		if !all(&spec) {
+		if !pred(&spec) {
 			continue
 		}
 		result.resources = append(result.resources, spec)
@@ -36,7 +39,7 @@ func (m Manifest) Filter(pred Predicate, preds ...Predicate) Manifest {
 // All returns true iff all of the predicates are true
 func All(pred Predicate, preds ...Predicate) Predicate {
 	return func(u *unstructured.Unstructured) bool {
-		for _, p := range append([]Predicate{ pred },  preds...) {
+		for _, p := range append([]Predicate{pred}, preds...) {
 			if !p(u) {
 				return false
 			}
@@ -48,7 +51,7 @@ func All(pred Predicate, preds ...Predicate) Predicate {
 // Any returns true iff any of the predicates are true
 func Any(pred Predicate, preds ...Predicate) Predicate {
 	return func(u *unstructured.Unstructured) bool {
-		for _, p := range append([]Predicate{ pred }, preds...) {
+		for _, p := range append([]Predicate{pred}, preds...) {
 			if p(u) {
 				return true
 			}

@@ -24,14 +24,14 @@ func TestFilter(t *testing.T) {
 		predicates []Predicate
 		count      int
 	}{{
-                name:       "Nothing",
-                predicates: []Predicate{Nothing},
-                count:      0,
-        }, {
-                name:       "Everything",
-                predicates: []Predicate{Everything},
-                count:      55,
-        }, {
+		name:       "Nothing",
+		predicates: []Predicate{Nothing},
+		count:      0,
+	}, {
+		name:       "Everything",
+		predicates: []Predicate{Everything},
+		count:      55,
+	}, {
 		name:       "No matches for label",
 		predicates: []Predicate{ByLabel("foo", "bar")},
 		count:      0,
@@ -111,9 +111,7 @@ func TestFilter(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			pred := test.predicates[0]
-			preds := test.predicates[1:]
-			actual := manifest.Filter(pred, preds...)
+			actual := manifest.Filter(test.predicates...)
 			count := len(actual.Resources())
 			if count != test.count {
 				t.Errorf("wanted %v, got %v", test.count, count)
@@ -203,9 +201,7 @@ func TestAnnotations(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			pred := test.predicates[0]
-			preds := test.predicates[1:]
-			actual := manifest.Filter(pred, preds...)
+			actual := manifest.Filter(test.predicates...)
 			count := len(actual.Resources())
 			if count != test.count {
 				t.Errorf("wanted %v, got %v", test.count, count)

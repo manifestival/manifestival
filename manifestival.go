@@ -22,7 +22,7 @@ type Manifestival interface {
 	// Transforms the resources within a Manifest
 	Transform(fns ...Transformer) (Manifest, error)
 	// Filters resources in a Manifest; Predicates are AND'd
-	Filter(fn Predicate, fns ...Predicate) Manifest
+	Filter(fns ...Predicate) Manifest
 	// Append the resources from other Manifests to create a new one
 	Append(mfs ...Manifest) Manifest
 	// Show how applying the manifest would change the cluster
