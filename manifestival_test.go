@@ -170,6 +170,34 @@ func TestAppend(t *testing.T) {
 	}
 }
 
+func TestNamespaceDeletion(t *testing.T) {
+	ns := v1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test",
+		},
+	}
+	u := unstructured.Unstructured{}
+	scheme.Scheme.Convert(&ns, &u, nil)
+	// First verify existing namespaces are *NOT* deleted
+	client := fake.New(&ns)
+	manifest, _ := ManifestFrom(Slice([]unstructured.Unstructured{u}), UseClient(client))
+	err := manifest.Apply()
+	assert(t, err, nil)
+	err = manifest.Delete()
+	assert(t, err, nil)
+	_, err = client.Get(&u)
+	assert(t, err, nil)
+	// Now verify that newly-created namespaces *ARE* deleted
+	err = client.Delete(&u)
+	assert(t, err, nil)
+	err = manifest.Apply()
+	assert(t, err, nil)
+	err = manifest.Delete()
+	assert(t, err, nil)
+	_, err = client.Get(&u)
+	assert(t, errors.IsNotFound(err), true)
+}
+
 func assert(t *testing.T, actual, expected interface{}) {
 	t.Helper()
 	if actual == expected {
