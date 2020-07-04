@@ -132,6 +132,7 @@ func (m Manifest) apply(spec *unstructured.Unstructured, opts ...ApplyOption) er
 	if current == nil {
 		m.logResource("Creating", spec)
 		current = spec.DeepCopy()
+		annotate(spec, "manifestival", resourceCreated)
 		annotate(current, v1.LastAppliedConfigAnnotation, lastApplied(current))
 		annotate(current, "manifestival", resourceCreated)
 		return m.Client.Create(current, opts...)
