@@ -16,10 +16,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - Fixed the `InjectNamespace` transformer to properly update the
   `spec.conversion` field in a `CustomResourceDefinition`
   [#55](https://github.com/manifestival/manifestival/issues/55)
-- `None` was removed and replaced with `Not`, which only accepts a single
-  predicate.
-- `Any` and `All` now require at least one predicate since it wasn't
-  clear how they should behave without one.
+- Predicate changes: `None` was removed and replaced with `Not`, which
+  only accepts a single predicate. `Any` and `All` now require at
+  least one predicate since it wasn't clear how they should behave
+  without one. [#56](https://github.com/manifestival/manifestival/pull/56)
+- Fixed bug where manifestival wasn't deleting namespaces it created.
+  (It should never delete a namespace it didn't create)
+  [#61](https://github.com/manifestival/manifestival/issues/61)
 
 ### Added
 
