@@ -43,6 +43,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - New filter `Predicate`, `ByAnnotation`, that does for annotations
   what `ByLabel` did for labels!
   [#52](https://github.com/manifestival/manifestival/pull/52)
+- Defaulting the `FieldManager` for create/updates to "manifestival"
+  to help reconcile changes in `metadata.managedFields`, in
+  anticipation of server-side apply. [#64](https://github.com/manifestival/manifestival/pull/64)
 
 ### Removed
 
