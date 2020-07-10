@@ -198,6 +198,35 @@ func TestNamespaceDeletion(t *testing.T) {
 	assert(t, errors.IsNotFound(err), true)
 }
 
+func TestGenerateName(t *testing.T) {
+	job := unstructured.Unstructured{}
+	job.SetAPIVersion("batch/v1")
+	job.SetKind("Job")
+	job.SetGenerateName("fubar-")
+	count := 0
+	client := fake.Client{
+		fake.Stubs{
+			Get: func(u *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+				if u.GetName() == "" {
+					return nil, errors.NewBadRequest("invalid")
+				}
+				return u, nil
+			},
+			Create: func(u *unstructured.Unstructured) error {
+				count++
+				return nil
+			},
+		},
+	}
+	manifest, _ := ManifestFrom(Slice([]unstructured.Unstructured{job}), UseClient(client))
+	assert(t, len(manifest.Filter(ByName("")).Resources()), 1)
+	expected := 5
+	for i := 0; i < expected; i++ {
+		manifest.Apply()
+	}
+	assert(t, count, expected)
+}
+
 func assert(t *testing.T, actual, expected interface{}) {
 	t.Helper()
 	if actual == expected {
