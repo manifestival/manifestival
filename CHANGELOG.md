@@ -5,9 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
-### Changed
-
 ### Added
+
+- Support for generated names: if `metadata.generateName` is set and
+  `metadata.name` is *not* set on any resource in a manifest, that resource will
+  always be _created_ when the manifest is _applied_. [#65](https://github.com/manifestival/manifestival/issues/65)
+
+### Changed
 
 ### Removed
 
