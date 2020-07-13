@@ -13,6 +13,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Changed
 
+- Fixed the `In` predicate to not incorporate the API version in its comparison
+  of manifest resources. Only Group, Kind, Namespace, and Name are used to test
+  for equality. [#67](https://github.com/manifestival/manifestival/issues/67)
+
 ### Removed
 
 

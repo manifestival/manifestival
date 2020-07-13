@@ -170,9 +170,21 @@ func TestInFilter(t *testing.T) {
 	eleven, _ := NewManifest("testdata/k-s-v0.11.0.yaml")
 	twelve, _ := NewManifest("testdata/k-s-v0.12.1.yaml")
 	new := twelve.Filter(Not(In(eleven)))
-	if len(new.Resources()) != 1 {
-		t.Error("Missing the autoscaler-hpa Service")
-	}
+	assert(t, len(new.Resources()), 1)
+
+	// now verify version doesn't matter
+	crd := &unstructured.Unstructured{}
+	crd.SetAPIVersion("apiextensions.k8s.io/v1beta1")
+	crd.SetKind("CustomResourceDefinition")
+	crd.SetName("foo")
+	crdv1 := crd.DeepCopy()
+	crdv1.SetAPIVersion("apiextensions.k8s.io/v1")
+
+	m, _ := ManifestFrom(Slice([]unstructured.Unstructured{*crd}))
+	mv1, _ := ManifestFrom(Slice([]unstructured.Unstructured{*crdv1}))
+	assert(t, len(m.Filter(Not(In(mv1))).Resources()), 0)
+	crdv1.SetName("bar")
+	assert(t, len(m.Filter(Not(In(mv1))).Resources()), 1)
 }
 
 func TestAnnotations(t *testing.T) {
