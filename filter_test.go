@@ -11,11 +11,10 @@ import (
 	. "github.com/manifestival/manifestival"
 )
 
-func True(_ *unstructured.Unstructured) bool {
-	return true
-}
-
-var False = Not(True)
+var (
+	True  = Everything
+	False = Nothing
+)
 
 func TestFilter(t *testing.T) {
 	manifest, _ := NewManifest("testdata/k-s-v0.12.1.yaml")
@@ -83,6 +82,30 @@ func TestFilter(t *testing.T) {
 		name:       "Any, both false",
 		predicates: []Predicate{Any(False, False)},
 		count:      0,
+	}, {
+		name:       "Any, empty should return nothing",
+		predicates: []Predicate{Any()},
+		count:      0,
+	}, {
+		name:       "All, first true then false",
+		predicates: []Predicate{All(True, False)},
+		count:      0,
+	}, {
+		name:       "All, first false then true",
+		predicates: []Predicate{All(False, True)},
+		count:      0,
+	}, {
+		name:       "All, both true",
+		predicates: []Predicate{All(True, True)},
+		count:      55,
+	}, {
+		name:       "All, both false",
+		predicates: []Predicate{All(False, False)},
+		count:      0,
+	}, {
+		name:       "All, empty should return everything",
+		predicates: []Predicate{All()},
+		count:      55,
 	}, {
 		name:       "Not true",
 		predicates: []Predicate{Not(True)},
