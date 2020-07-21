@@ -16,6 +16,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - Fixed the `In` predicate to not incorporate the API version in its comparison
   of manifest resources. Only Group, Kind, Namespace, and Name are used to test
   for equality. [#67](https://github.com/manifestival/manifestival/issues/67)
+- After experimenting with dynamically constructing `Any` and `All`
+  predicates, we decided to partially revert
+  [#56](https://github.com/manifestival/manifestival/pull/56): `Any`
+  and `All` no longer require at least one argument as it has become
+  clear that `All()` should match `Everything` and `Any()` should
+  match `Nothing`. [#69](https://github.com/manifestival/manifestival/issues/69)
 
 ### Removed
 
