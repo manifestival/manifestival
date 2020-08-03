@@ -60,3 +60,68 @@ spec:
   - name: Reason
     type: string
     JSONPath: ".status.conditions[?(@.type=='Ready')].reason"
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: configurations.serving.knative.dev
+  labels:
+    serving.knative.dev/release: devel
+    knative.dev/crd-install: "true"
+    duck.knative.dev/podspecable: "true"
+spec:
+  group: serving.knative.dev
+  versions:
+    - &version
+      name: v1alpha1
+      served: true
+      storage: false
+      subresources:
+        status: {}
+      schema:
+        openAPIV3Schema:
+          type: object
+          # this is a work around so we don't need to flush out the
+          # schema for each version at this time
+          #
+          # see issue: https://github.com/knative/serving/issues/912
+          x-kubernetes-preserve-unknown-fields: true
+      additionalPrinterColumns:
+        - name: LatestCreated
+          type: string
+          jsonPath: .status.latestCreatedRevisionName
+        - name: LatestReady
+          type: string
+          jsonPath: .status.latestReadyRevisionName
+        - name: Ready
+          type: string
+          jsonPath: ".status.conditions[?(@.type=='Ready')].status"
+        - name: Reason
+          type: string
+          jsonPath: ".status.conditions[?(@.type=='Ready')].reason"
+    - << : *version
+      name: v1beta1
+    - << : *version
+      name: v1
+      storage: true
+  names:
+    kind: Configuration
+    plural: configurations
+    singular: configuration
+    categories:
+      - all
+      - knative
+      - serving
+    shortNames:
+      - config
+      - cfg
+  scope: Namespaced
+  conversion:
+    strategy: Webhook
+    webhook:
+      conversionReviewVersions: ["v1", "v1beta1"]
+      clientConfig:
+        service:
+          name: webhook
+          namespace: knative-serving

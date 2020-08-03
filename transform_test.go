@@ -4,10 +4,11 @@ import (
 	"os"
 	"testing"
 
-	. "github.com/manifestival/manifestival"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/kubernetes/scheme"
+
+	. "github.com/manifestival/manifestival"
 )
 
 func TestTransform(t *testing.T) {
@@ -172,7 +173,13 @@ func TestInjectNamespaceAPIService(t *testing.T) {
 
 func TestInjectNamespaceCRD(t *testing.T) {
 	assert := func(u unstructured.Unstructured, expected string) {
-		ns, _, err := unstructured.NestedString(u.Object, "spec", "conversion", "webhookClientConfig", "service", "namespace")
+		var ns string
+		var err error
+		if u.GroupVersionKind().Version == "v1" {
+			ns, _, err = unstructured.NestedString(u.Object, "spec", "conversion", "webhook", "clientConfig", "service", "namespace")
+		} else {
+			ns, _, err = unstructured.NestedString(u.Object, "spec", "conversion", "webhookClientConfig", "service", "namespace")
+		}
 		if err != nil {
 			t.Errorf("Failed to find `service.namespace`: %v", err)
 		}
@@ -184,7 +191,9 @@ func TestInjectNamespaceCRD(t *testing.T) {
 	if f, err = f.Transform(InjectNamespace("foo")); err != nil {
 		t.Error(err)
 	}
-	assert(f.Resources()[0], "foo")
+	for _, resource := range f.Resources() {
+		assert(resource, "foo")
+	}
 	os.Setenv("FOO", "food")
 	if f, err = f.Transform(InjectNamespace("$FOO")); err != nil {
 		t.Error(err)
