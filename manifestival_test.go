@@ -205,7 +205,7 @@ func TestGenerateName(t *testing.T) {
 	job.SetGenerateName("fubar-")
 	count := 0
 	client := fake.Client{
-		fake.Stubs{
+		Stubs: fake.Stubs{
 			Get: func(u *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 				if u.GetName() == "" {
 					return nil, errors.NewBadRequest("invalid")
