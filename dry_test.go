@@ -46,8 +46,9 @@ func TestKnativeUpgrade(t *testing.T) {
 	old, _ := NewManifest("testdata/k-s-v0.11.0.yaml", UseClient(client))
 	old.Apply()
 	new, _ := NewManifest("testdata/k-s-v0.12.1.yaml", UseClient(client))
-	// Filter to omit version label noise
-	diffs, err := new.Filter(ignoreReleaseLabel(old)).DryRun()
+	// Transform to omit version label noise
+	unversioned, _ := new.Transform(ignoreReleaseLabel(old))
+	diffs, err := unversioned.DryRun()
 	if err != nil {
 		t.Error(err)
 	}
@@ -66,12 +67,12 @@ func TestKnativeUpgrade(t *testing.T) {
 	}
 }
 
-func ignoreReleaseLabel(old Manifest) Predicate {
+func ignoreReleaseLabel(old Manifest) Transformer {
 	const key = "serving.knative.dev/release"
-	return func(u *unstructured.Unstructured) bool {
+	return func(u *unstructured.Unstructured) error {
 		found := old.Filter(ByGVK(u.GroupVersionKind()), ByName(u.GetName())).Resources()
 		if len(found) == 0 {
-			return true
+			return nil
 		}
 		labels := u.GetLabels()
 		if labels == nil {
@@ -81,6 +82,6 @@ func ignoreReleaseLabel(old Manifest) Predicate {
 			labels[key] = found[0].GetLabels()[key]
 			u.SetLabels(labels)
 		}
-		return true
+		return nil
 	}
 }

@@ -218,7 +218,11 @@ func TestConvertTransform(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	for _, u := range actual.Filter(ByKind("ConfigMap")).Resources() {
+	configmaps := actual.Filter(ByKind("ConfigMap")).Resources()
+	if len(configmaps) == 0 {
+		t.Error("Not enough configmaps")
+	}
+	for _, u := range configmaps {
 		cm := &v1.ConfigMap{}
 		if err := scheme.Scheme.Convert(&u, cm, nil); err != nil {
 			t.Error(err)
