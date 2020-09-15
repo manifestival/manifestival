@@ -139,12 +139,10 @@ theRest := manifest.Filter(Not(rbac))
 m := manifest.Filter(ByLabel("foo", "bar"), ByName("controller"), NoCRDs)
 ```
 
-Because the `Predicate` receives the resource by reference, any
-changes you make to it will be reflected in the returned `Manifest`,
-but _not_ in the one being filtered -- manifests are immutable. Since
-errors are not in the `Predicate` interface, you should limit changes
-to those that won't error. For more complex mutations, use `Transform`
-instead.
+The `Predicate` receives a deep copy of each resource, so no
+modifications made to any resource will be reflected in the returned
+`Manifest`, which is immutable. The only way to alter resources in a
+`Manifest` is with its `Transform` method.
 
 
 ### Transform

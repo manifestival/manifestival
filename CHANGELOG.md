@@ -5,9 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
-### Added
-
 ### Changed
+
+- It is no longer possible to mutate manifest resources with the
+  `Filter` method, since now only deep copies of each resource are
+  passed to each `Predicate`. The only way to change a manifest's
+  resources is via the `Transform` method. [#75](https://github.com/manifestival/manifestival/issues/75)
+
+### Added
 
 ### Removed
 

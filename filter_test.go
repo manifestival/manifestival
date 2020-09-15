@@ -3,10 +3,8 @@ package manifestival_test
 import (
 	"testing"
 
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/kubernetes/scheme"
 
 	. "github.com/manifestival/manifestival"
 )
@@ -146,46 +144,11 @@ func TestFilter(t *testing.T) {
 func TestFilterMutation(t *testing.T) {
 	m, _ := NewManifest("testdata/k-s-v0.12.1.yaml")
 	bobs := m.Filter(func(u *unstructured.Unstructured) bool {
-		// This is an abuse of a Predicate, but allowed for those
-		// times you'd prefer not to deal with the multi-valued result
-		// of Transform
 		u.SetName("bob")
 		return true
 	})
-
-	if 0 != len(m.Filter(ByName("bob")).Resources()) {
+	if 0 != len(m.Filter(ByName("bob")).Resources()) || 0 != len(bobs.Filter(ByName("bob")).Resources()) {
 		t.Error("Even one bob is too many")
-	}
-	if 55 != len(bobs.Filter(ByName("bob")).Resources()) {
-		t.Error("Not every one is bob")
-	}
-}
-
-func TestConvertFilter(t *testing.T) {
-	manifest, _ := NewManifest("testdata/k-s-v0.12.1.yaml")
-	filter := func(u *unstructured.Unstructured) bool {
-		// Another abuse of Predicate, to ensure Convert works
-		if u.GetKind() == "ConfigMap" {
-			cm := &v1.ConfigMap{}
-			scheme.Scheme.Convert(u, cm, nil)
-			cm.Data["foo"] = "bar"
-			scheme.Scheme.Convert(cm, u, nil)
-			return true
-		}
-		return false
-	}
-	actual := manifest.Filter(filter)
-	if 0 == len(actual.Resources()) {
-		t.Error("Not enough ConfigMaps!")
-	}
-	for _, u := range actual.Resources() {
-		cm := &v1.ConfigMap{}
-		if err := scheme.Scheme.Convert(&u, cm, nil); err != nil {
-			t.Error(err)
-		}
-		if cm.Data["foo"] != "bar" {
-			t.Error("Data not there")
-		}
 	}
 }
 
