@@ -19,10 +19,9 @@ require (
 	golang.org/x/text v0.3.2 // indirect
 	golang.org/x/tools/gopls v0.4.4 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	k8s.io/api v0.15.7
-	k8s.io/apimachinery v0.15.7
-	k8s.io/client-go v0.15.7
+	k8s.io/api v0.18.8
+	k8s.io/apimachinery v0.18.8
+	k8s.io/client-go v0.18.8
 	k8s.io/klog v1.0.0 // indirect
-	k8s.io/kube-openapi v0.0.0-20200204173128-addea2498afe // indirect
 	sigs.k8s.io/yaml v1.2.0
 )
