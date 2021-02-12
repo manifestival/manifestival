@@ -11,6 +11,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
   `Filter` method, since now only deep copies of each resource are
   passed to each `Predicate`. The only way to change a manifest's
   resources is via the `Transform` method. [#75](https://github.com/manifestival/manifestival/issues/75)
+- Updated Golang version to 1.15.
+- Updated Kubernetes dependencies to 1.19.7.
+- Updated `github.com/evanphx/json-patch` to `v5.2.0`
+- Updated `github.com/go-logr/logr` to `v0.4.0`
 
 ### Added
 
