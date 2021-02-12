@@ -7,6 +7,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Changed
 
+### Added
+
+### Removed
+
+
+## [0.7.0] - 2021-02-11
+
+### Changed
+
 - It is no longer possible to mutate manifest resources with the
   `Filter` method, since now only deep copies of each resource are
   passed to each `Predicate`. The only way to change a manifest's
@@ -15,10 +24,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - Updated Kubernetes dependencies to 1.19.7.
 - Updated `github.com/evanphx/json-patch` to `v5.2.0`
 - Updated `github.com/go-logr/logr` to `v0.4.0`
-
-### Added
-
-### Removed
 
 
 ## [0.6.1] - 2020-08-19
@@ -256,7 +261,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 [controller-runtime]: https://github.com/manifestival/controller-runtime-client
 [client-go]: https://github.com/manifestival/client-go-client
-[Unreleased]: https://github.com/manifestival/manifestival/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/manifestival/manifestival/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/manifestival/manifestival/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/manifestival/manifestival/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/manifestival/manifestival/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/manifestival/manifestival/compare/v0.4.0...v0.5.0
