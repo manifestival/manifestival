@@ -1,6 +1,6 @@
 # Manifestival
 
-[![Build Status](https://travis-ci.org/manifestival/manifestival.svg?branch=master)](https://travis-ci.org/manifestival/manifestival)
+[![Build Status](https://github.com/manifestival/manifestival/workflows/Build%20and%20Test/badge.svg)](https://github.com/manifestival/manifestival/actions)
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/manifestival/manifestival)](https://pkg.go.dev/github.com/manifestival/manifestival)
 
 Manifestival is a library for manipulating a set of unstructured
