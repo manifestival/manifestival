@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/kubernetes/scheme"
 
@@ -230,5 +231,52 @@ func TestConvertTransform(t *testing.T) {
 		if cm.Data["foo"] != "bar" {
 			t.Error("Data not there")
 		}
+	}
+}
+
+func TestInjectOwner(t *testing.T) {
+	f, err := NewManifest("testdata/inject-owner.yaml")
+	if err != nil {
+		t.Error(err)
+	}
+
+	owner := v1.Service{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Service",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "owner",
+			Namespace: "foo",
+		},
+	}
+
+	if f, err = f.Transform(InjectOwner(&owner)); err != nil {
+		t.Error(err)
+	}
+
+	// check the good resource
+
+	refs := f.Resources()[0].GetOwnerReferences()
+	if len(refs) != 1 {
+		t.Errorf("Expected to find 1 owner reference but found %d", len(refs))
+	}
+	ref := refs[0]
+	if ref.APIVersion != "v1" || ref.Kind != "Service" || ref.Name != "owner" {
+		t.Errorf("Incorrect owner reference found")
+	}
+
+	// check resource in a different namespace
+
+	refs = f.Resources()[1].GetOwnerReferences()
+	if len(refs) != 0 {
+		t.Errorf("Expected to find 0 owner references but found %d", len(refs))
+	}
+
+	// check cluster resource
+
+	refs = f.Resources()[2].GetOwnerReferences()
+	if len(refs) != 0 {
+		t.Errorf("Expected to find 0 owner references but found %d", len(refs))
 	}
 }

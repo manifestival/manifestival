@@ -94,14 +94,28 @@ func InjectNamespace(ns string) Transformer {
 // `owner` to namespace-scoped objects.
 func InjectOwner(owner Owner) Transformer {
 	return func(u *unstructured.Unstructured) error {
-		if !isClusterScoped(u.GetKind()) {
-			// apparently reference counting for cluster-scoped
-			// resources is broken, so trust the GC only for ns-scoped
-			// dependents
+		if shouldInjectOwner(u, owner) {
 			u.SetOwnerReferences([]v1.OwnerReference{*v1.NewControllerRef(owner, owner.GroupVersionKind())})
 		}
 		return nil
 	}
+}
+
+func shouldInjectOwner(u *unstructured.Unstructured, owner Owner) bool {
+	if isClusterScoped(u.GetKind()) {
+		// apparently reference counting for cluster-scoped
+		// resources is broken, so trust the GC only for ns-scoped
+		// dependents
+		return false
+	}
+
+	if u.GetNamespace() != owner.GetNamespace() {
+		// Kubernetes v1.20+ does not allow cross-namespace owner references and
+		// will garbage collect the resource due to OwnerRefInvalidNamespace
+		return false
+	}
+
+	return true
 }
 
 func isClusterScoped(kind string) bool {
