@@ -114,10 +114,8 @@ func (m Manifest) Delete(opts ...DeleteOption) error {
 		a[left], a[right] = a[right], a[left]
 	}
 	for _, spec := range a {
-		if okToDelete(&spec) {
-			if err := m.delete(&spec, opts...); err != nil {
-				return err
-			}
+		if err := m.delete(&spec, opts...); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -131,8 +129,8 @@ func (m Manifest) apply(spec *unstructured.Unstructured, opts ...ApplyOption) er
 	}
 	if current == nil {
 		m.logResource("Creating", spec)
-		annotate(spec, "manifestival", resourceCreated)
 		current = spec.DeepCopy()
+		annotate(current, "manifestival", resourceCreated)
 		annotate(current, v1.LastAppliedConfigAnnotation, lastApplied(current))
 		return m.Client.Create(current, opts...)
 	} else {
@@ -178,6 +176,11 @@ func (m Manifest) delete(spec *unstructured.Unstructured, opts ...DeleteOption) 
 	if current == nil && err == nil {
 		return nil
 	}
+
+	if !okToDelete(current) {
+		return nil
+	}
+
 	m.logResource("Deleting", spec)
 	return m.Client.Delete(spec, opts...)
 }
