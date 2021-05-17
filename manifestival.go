@@ -143,10 +143,18 @@ func (m Manifest) apply(spec *unstructured.Unstructured, opts ...ApplyOption) er
 		if diff == nil {
 			return nil
 		}
+
+		isResourceCreated := current.GetAnnotations()["manifestival"] == resourceCreated
 		m.log.Info("Merging", "diff", diff)
 		if err := diff.Merge(current); err != nil {
 			return err
 		}
+
+		// Make sure the manifestival annotation is carried over.
+		if isResourceCreated {
+			annotate(current, "manifestival", resourceCreated)
+		}
+
 		return m.update(current, spec, opts...)
 	}
 }
