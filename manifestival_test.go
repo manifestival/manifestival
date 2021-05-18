@@ -150,6 +150,37 @@ conditions:
 	}
 }
 
+func TestApplyKeepManifestivalAnnotation(t *testing.T) {
+	current := []byte(`
+apiVersion: v1
+kind: ComponentStatus
+metadata:
+  name: test
+`)
+	resource := &unstructured.Unstructured{}
+	resource.SetAPIVersion("v1")
+	resource.SetKind("ComponentStatus")
+	resource.SetName("test")
+
+	client := fake.New()
+	manifest, _ := ManifestFrom(Reader(bytes.NewReader(current)), UseClient(client))
+
+	manifest.Apply()
+
+	obj, _ := client.Get(resource)
+	if obj.GetAnnotations()["manifestival"] != "new" {
+		t.Errorf("Resource did not contain 'manifestival' annotation after first apply")
+	}
+
+	manifest2, _ := ManifestFrom(Reader(bytes.NewReader(current)), UseClient(client))
+	manifest2.Apply()
+
+	obj, _ = client.Get(resource)
+	if obj.GetAnnotations()["manifestival"] != "new" {
+		t.Errorf("Resource did not contain 'manifestival' annotation after second apply")
+	}
+}
+
 func TestAppend(t *testing.T) {
 	u := &unstructured.Unstructured{}
 	u.SetName("testy")
