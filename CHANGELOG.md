@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Changed
 
+- Fixed the lifecycle of the `manifestival` annotation to be stored in the
+  database rather than the `Manifest` object state. Namespaces created from
+  varying manifests will now be deleted correctly if the annotation is
+  present. [#85](https://github.com/manifestival/manifestival/issues/85)
+
 ### Added
 
 ### Removed
