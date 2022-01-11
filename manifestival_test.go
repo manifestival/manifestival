@@ -82,7 +82,7 @@ func TestMethodChaining(t *testing.T) {
 	const expected = 6
 	const kind = "Deployment"
 	const name = "controller"
-	manifest, _ := NewManifest("testdata/k-s-v0.12.1.yaml", UseClient(fake.New()), UseLogger(logr.TestLogger{T: t}))
+	manifest, _ := NewManifest("testdata/k-s-v0.12.1.yaml", UseClient(fake.New()), UseLogger(logr.NewTestLogger(t)))
 	// Filter->Transform->Resources
 	deployments, _ := manifest.Filter(ByKind(kind)).Transform(InjectNamespace("foo"))
 	assert(t, len(deployments.Resources()), expected)

@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Changed
 
+- Bump K8s dependencies to v0.22.5 - also bumped klog (v2.40.1) & go-logr (v1.2.2) 
 - Fixed the lifecycle of the `manifestival` annotation to be stored in the
   database rather than the `Manifest` object state. Namespaces created from
   varying manifests will now be deleted correctly if the annotation is
