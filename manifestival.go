@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/go-logr/logr/testing"
 	"github.com/manifestival/manifestival/internal/overlay"
 	"github.com/manifestival/manifestival/internal/patch"
 	v1 "k8s.io/api/core/v1"
@@ -65,7 +64,7 @@ func NewManifest(pathname string, opts ...Option) (Manifest, error) {
 
 // ManifestFrom creates a Manifest from any Source implementation
 func ManifestFrom(src Source, opts ...Option) (m Manifest, err error) {
-	m = Manifest{log: testing.NullLogger{}}
+	m = Manifest{log: logr.Discard()}
 	for _, opt := range opts {
 		opt(&m)
 	}
