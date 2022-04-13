@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Changed
 
+- No longer ignoring errors resulting from invalid YAML manifests [#88](https://github.com/manifestival/manifestival/issues/88)
+
 ### Added
 
 ### Removed
