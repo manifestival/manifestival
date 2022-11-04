@@ -90,8 +90,8 @@ func InjectNamespace(ns string) Transformer {
 	}
 }
 
-// InjectOwner creates a Tranformer which adds an OwnerReference pointing to
-// `owner` to namespace-scoped objects.
+// InjectOwner creates a Transformer which adds an OwnerReference
+// pointing to `owner`
 func InjectOwner(owner Owner) Transformer {
 	return func(u *unstructured.Unstructured) error {
 		if !isClusterScoped(u.GetKind()) {
