@@ -244,7 +244,7 @@ func TestInjectOwnerOfClusterType(t *testing.T) {
 	scheme.Scheme.Convert(&ns, &u, nil)
 	m, _ := ManifestFrom(Slice([]unstructured.Unstructured{u}))
 	assert(t, len(m.Resources()[0].GetOwnerReferences()), 0)
-	// Don't allow clustered types to be owned
+	// No restrictions on which types (cluster or ns) can be owned
 	m, _ = m.Transform(InjectOwner(&ns))
-	assert(t, len(m.Resources()[0].GetOwnerReferences()), 0)
+	assert(t, len(m.Resources()[0].GetOwnerReferences()), 1)
 }
