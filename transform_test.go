@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/kubernetes/scheme"
 
@@ -231,4 +232,19 @@ func TestConvertTransform(t *testing.T) {
 			t.Error("Data not there")
 		}
 	}
+}
+
+func TestInjectOwnerOfClusterType(t *testing.T) {
+	ns := v1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test",
+		},
+	}
+	u := unstructured.Unstructured{}
+	scheme.Scheme.Convert(&ns, &u, nil)
+	m, _ := ManifestFrom(Slice([]unstructured.Unstructured{u}))
+	assert(t, len(m.Resources()[0].GetOwnerReferences()), 0)
+	// No restrictions on which types (cluster or ns) can be owned
+	m, _ = m.Transform(InjectOwner(&ns))
+	assert(t, len(m.Resources()[0].GetOwnerReferences()), 1)
 }
