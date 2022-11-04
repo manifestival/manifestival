@@ -287,6 +287,19 @@ func TestGenerateName(t *testing.T) {
 	assert(t, count, expected)
 }
 
+func TestDeleteError(t *testing.T) {
+	client := fake.Client{
+		fake.Stubs{
+			Get: func(obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+				return nil, errors.NewBadRequest("TestDeleteError")
+			},
+		},
+	}
+	manifest, _ := NewManifest("testdata/k-s-v0.12.1.yaml", UseClient(client))
+	err := manifest.Delete()
+	assert(t, err.Error(), "TestDeleteError")
+}
+
 func assert(t *testing.T, actual, expected interface{}) {
 	t.Helper()
 	if actual == expected {
