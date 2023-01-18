@@ -57,7 +57,7 @@ func InjectNamespace(ns string) Transformer {
 		return nil
 	}
 	return func(u *unstructured.Unstructured) error {
-		if !isClusterScoped(u.GetKind()) {
+		if !IsClusterScoped(u.GetKind()) {
 			u.SetNamespace(namespace)
 		}
 		switch strings.ToLower(u.GetKind()) {
@@ -99,7 +99,7 @@ func InjectOwner(owner Owner) Transformer {
 	}
 }
 
-func isClusterScoped(kind string) bool {
+func IsClusterScoped(kind string) bool {
 	// TODO: something more clever using !APIResource.Namespaced maybe?
 	switch strings.ToLower(kind) {
 	case "componentstatus",
