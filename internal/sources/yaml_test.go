@@ -8,10 +8,10 @@ import (
 )
 
 func TestInvalidManifest(t *testing.T) {
-    manifests  := "*%*%&$&#@(!)@#!#"
-    reader := strings.NewReader(manifests)
-    _, err := Decode(reader)
-    if err == nil {
-        t.Errorf("Invalid YAML should have errored")
-    }
+	manifests := "*%*%&$&#@(!)@#!#"
+	reader := strings.NewReader(manifests)
+	_, err := Decode(reader)
+	if err == nil {
+		t.Errorf("Invalid YAML should have errored")
+	}
 }

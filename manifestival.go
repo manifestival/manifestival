@@ -172,9 +172,9 @@ func (m Manifest) update(live, spec *unstructured.Unstructured, opts ...ApplyOpt
 // delete removes the specified object
 func (m Manifest) delete(spec *unstructured.Unstructured, opts ...DeleteOption) error {
 	current, err := m.get(spec)
-    if err != nil {
-        return err
-    }
+	if err != nil {
+		return err
+	}
 	if current == nil {
 		return nil
 	}

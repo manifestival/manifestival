@@ -289,7 +289,7 @@ func TestGenerateName(t *testing.T) {
 
 func TestDeleteError(t *testing.T) {
 	client := fake.Client{
-		fake.Stubs{
+		Stubs: fake.Stubs{
 			Get: func(obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 				return nil, errors.NewBadRequest("TestDeleteError")
 			},
