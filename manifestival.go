@@ -31,9 +31,10 @@ type Manifestival interface {
 // Manifest tracks a set of concrete resources which should be managed as a
 // group using a Kubernetes client
 type Manifest struct {
-	resources []unstructured.Unstructured
-	Client    Client
-	log       logr.Logger
+	resources                   []unstructured.Unstructured
+	Client                      Client
+	log                         logr.Logger
+	lastAppliedConfigAnnotation string
 }
 
 var _ Manifestival = &Manifest{}
@@ -55,6 +56,14 @@ func UseClient(client Client) Option {
 	}
 }
 
+// UseLastAppliedConfigAnnotation sets an alternate name for the annotation used to track the last applied configuration (defaults to kubectl.kubernetes.io/last-applied-configuration)
+// annotationName is a value specific to your application such as myapp.example.com/last-applied-configuration
+func UseLastAppliedConfigAnnotation(annotationName string) Option {
+	return func(m *Manifest) {
+		m.lastAppliedConfigAnnotation = annotationName
+	}
+}
+
 // NewManifest creates a Manifest from a comma-separated set of YAML
 // files, directories, or URLs. It's equivalent to
 // `ManifestFrom(Path(pathname))`
@@ -64,7 +73,7 @@ func NewManifest(pathname string, opts ...Option) (Manifest, error) {
 
 // ManifestFrom creates a Manifest from any Source implementation
 func ManifestFrom(src Source, opts ...Option) (m Manifest, err error) {
-	m = Manifest{log: logr.Discard()}
+	m = Manifest{log: logr.Discard(), lastAppliedConfigAnnotation: v1.LastAppliedConfigAnnotation}
 	for _, opt := range opts {
 		opt(&m)
 	}
@@ -130,10 +139,10 @@ func (m Manifest) apply(spec *unstructured.Unstructured, opts ...ApplyOption) er
 		m.logResource("Creating", spec)
 		current = spec.DeepCopy()
 		annotate(current, "manifestival", resourceCreated)
-		annotate(current, v1.LastAppliedConfigAnnotation, lastApplied(current))
+		annotate(current, m.lastAppliedConfigAnnotation, lastApplied(current, m.lastAppliedConfigAnnotation))
 		return m.Client.Create(current, opts...)
 	} else {
-		diff, err := patch.New(current, spec)
+		diff, err := patch.New(current, spec, m.lastAppliedConfigAnnotation)
 		if err != nil {
 			return err
 		}
@@ -159,7 +168,7 @@ func (m Manifest) apply(spec *unstructured.Unstructured, opts ...ApplyOption) er
 // update a single resource
 func (m Manifest) update(live, spec *unstructured.Unstructured, opts ...ApplyOption) error {
 	m.logResource("Updating", live)
-	annotate(live, v1.LastAppliedConfigAnnotation, lastApplied(spec))
+	annotate(live, m.lastAppliedConfigAnnotation, lastApplied(spec, m.lastAppliedConfigAnnotation))
 	err := m.Client.Update(live, opts...)
 	if errors.IsInvalid(err) && ApplyWith(opts).Overwrite {
 		m.log.Error(err, "Failed to update merged resource, trying overwrite")
@@ -219,10 +228,10 @@ func annotate(spec *unstructured.Unstructured, key string, value string) {
 }
 
 // lastApplied returns a JSON string denoting the resource's state
-func lastApplied(obj *unstructured.Unstructured) string {
+func lastApplied(obj *unstructured.Unstructured, annotationName string) string {
 	ann := obj.GetAnnotations()
 	if len(ann) > 0 {
-		delete(ann, v1.LastAppliedConfigAnnotation)
+		delete(ann, annotationName)
 		obj.SetAnnotations(ann)
 	}
 	bytes, _ := obj.MarshalJSON()

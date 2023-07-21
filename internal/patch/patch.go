@@ -4,7 +4,6 @@ import (
 	"bytes"
 
 	jsonpatch "github.com/evanphx/json-patch/v5"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/jsonmergepatch"
@@ -19,9 +18,9 @@ type Patch struct {
 
 // Attempts to create a 3-way strategic JSON merge patch. Falls back
 // to RFC-7386 if object's type isn't registered
-func New(curr, mod *unstructured.Unstructured) (_ *Patch, err error) {
+func New(curr, mod *unstructured.Unstructured, lastAppliedConfigAnnotation string) (_ *Patch, err error) {
 	var original, modified, current []byte
-	original = getLastAppliedConfig(curr)
+	original = getLastAppliedConfig(curr, lastAppliedConfigAnnotation)
 	if modified, err = mod.MarshalJSON(); err != nil {
 		return
 	}
@@ -81,10 +80,10 @@ func create(patch []byte, schema strategicpatch.LookupPatchMeta) *Patch {
 	return &Patch{patch, schema}
 }
 
-func getLastAppliedConfig(obj *unstructured.Unstructured) []byte {
+func getLastAppliedConfig(obj *unstructured.Unstructured, lastAppliedConfigAnnotation string) []byte {
 	annotations := obj.GetAnnotations()
 	if annotations == nil {
 		return nil
 	}
-	return []byte(annotations[v1.LastAppliedConfigAnnotation])
+	return []byte(annotations[lastAppliedConfigAnnotation])
 }
