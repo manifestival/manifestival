@@ -78,6 +78,34 @@ func TestLastAppliedAnnotation(t *testing.T) {
 	assert(t, actual, expected)
 }
 
+func TestLastAppliedAnnotationAlt(t *testing.T) {
+	cm := v1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test",
+		},
+		Data: map[string]string{"foo": "bar"},
+	}
+	u := unstructured.Unstructured{}
+	scheme.Scheme.Convert(&cm, &u, nil)
+	ub, _ := u.MarshalJSON()
+	expected := string(ub)
+	// Seed the fake client with a different configmap
+	cm.Data["foo"] = "baz"
+	cm.Data["bizz"] = "buzz"
+	client := fake.New(&cm)
+	annotationName := "test.example.com/last-applied-configuration"
+	// Use the unstructured for our manifest
+	m, _ := ManifestFrom(Slice([]unstructured.Unstructured{u}), UseClient(client), UseLastAppliedConfigAnnotation(annotationName))
+	if err := m.Apply(); err != nil {
+		t.Error(err)
+	}
+	x, _ := m.Client.Get(&u)
+	actual := x.GetAnnotations()[annotationName]
+	assert(t, actual, expected)
+	actual = x.GetAnnotations()[v1.LastAppliedConfigAnnotation]
+	assert(t, actual, "")
+}
+
 func TestMethodChaining(t *testing.T) {
 	const expected = 6
 	const kind = "Deployment"

@@ -52,7 +52,7 @@ func (m Manifest) diff() ([][]byte, error) {
 			}
 		}
 		// create diff
-		diff, err := patch.New(current, &spec)
+		diff, err := patch.New(current, &spec, m.lastAppliedConfigAnnotation)
 		if err != nil {
 			return nil, err
 		}

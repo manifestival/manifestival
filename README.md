@@ -262,6 +262,21 @@ option, like so:
 m, _ := NewManifest(path, UseLogger(log.WithName("manifestival")), UseClient(c))
 ```
 
+### Last Applied Configuration Annotation
+
+Upon creation or modification, Manifestival records the contents of the object
+in an annotation. This allows future updates to remove obsolete fields and
+values automatically. By default, the name of this annotation is
+`kubectl.kubernetes.io/last-applied-configuration` which is the same name used
+by `kubectl` and applications which use `kubectl` to apply object values. If
+desired, the annotation name can be changed so that Manifestival-applied fields
+won't interfere with non-conflicting, `kubectl`-applied fields (or vice-versa).
+The annotation name is set like this:
+
+```go
+m, _ := NewManifest(path, UseLastAppliedConfigAnnotation("myapp.example.com/last-applied-configuration"))
+```
+
 ### Apply
 
 [Apply] will persist every resource in the manifest to the cluster. It

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"testing"
 
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/yaml"
 
@@ -287,7 +288,7 @@ func TestPatching(t *testing.T) {
 			mod := &unstructured.Unstructured{Object: test.Modified}
 			cur := &unstructured.Unstructured{Object: test.Current}
 
-			patch, err := New(cur, mod)
+			patch, err := New(cur, mod, v1.LastAppliedConfigAnnotation)
 			if err != nil {
 				t.Error(err)
 			}
