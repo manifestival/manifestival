@@ -1,6 +1,7 @@
 package manifestival
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/go-logr/logr"
@@ -15,9 +16,9 @@ import (
 // resources (typically, a set of YAML files, aka a manifest)
 type Manifestival interface {
 	// Either updates or creates all resources in the manifest
-	Apply(opts ...ApplyOption) error
+	Apply(ctx context.Context, opts ...ApplyOption) error
 	// Deletes all resources in the manifest
-	Delete(opts ...DeleteOption) error
+	Delete(ctx context.Context, opts ...DeleteOption) error
 	// Transforms the resources within a Manifest
 	Transform(fns ...Transformer) (Manifest, error)
 	// Filters resources in a Manifest; Predicates are AND'd
@@ -25,7 +26,7 @@ type Manifestival interface {
 	// Append the resources from other Manifests to create a new one
 	Append(mfs ...Manifest) Manifest
 	// Show how applying the manifest would change the cluster
-	DryRun() ([]MergePatch, error)
+	DryRun(ctx context.Context) ([]MergePatch, error)
 }
 
 // Manifest tracks a set of concrete resources which should be managed as a
@@ -104,9 +105,9 @@ func (m Manifest) Resources() []unstructured.Unstructured {
 }
 
 // Apply updates or creates all resources in the manifest.
-func (m Manifest) Apply(opts ...ApplyOption) error {
+func (m Manifest) Apply(ctx context.Context, opts ...ApplyOption) error {
 	for _, spec := range m.resources {
-		if err := m.apply(&spec, opts...); err != nil {
+		if err := m.apply(ctx, &spec, opts...); err != nil {
 			return err
 		}
 	}
@@ -114,7 +115,7 @@ func (m Manifest) Apply(opts ...ApplyOption) error {
 }
 
 // Delete removes all resources in the Manifest
-func (m Manifest) Delete(opts ...DeleteOption) error {
+func (m Manifest) Delete(ctx context.Context, opts ...DeleteOption) error {
 	a := make([]unstructured.Unstructured, len(m.resources))
 	copy(a, m.resources) // shallow copy is fine
 	// we want to delete in reverse order
@@ -122,7 +123,7 @@ func (m Manifest) Delete(opts ...DeleteOption) error {
 		a[left], a[right] = a[right], a[left]
 	}
 	for _, spec := range a {
-		if err := m.delete(&spec, opts...); err != nil {
+		if err := m.delete(ctx, &spec, opts...); err != nil {
 			return err
 		}
 	}
@@ -130,8 +131,8 @@ func (m Manifest) Delete(opts ...DeleteOption) error {
 }
 
 // apply updates or creates a particular resource
-func (m Manifest) apply(spec *unstructured.Unstructured, opts ...ApplyOption) error {
-	current, err := m.get(spec)
+func (m Manifest) apply(ctx context.Context, spec *unstructured.Unstructured, opts ...ApplyOption) error {
+	current, err := m.get(ctx, spec)
 	if err != nil {
 		return err
 	}
@@ -140,7 +141,7 @@ func (m Manifest) apply(spec *unstructured.Unstructured, opts ...ApplyOption) er
 		current = spec.DeepCopy()
 		annotate(current, "manifestival", resourceCreated)
 		annotate(current, m.lastAppliedConfigAnnotation, lastApplied(current, m.lastAppliedConfigAnnotation))
-		return m.Client.Create(current, opts...)
+		return m.Client.Create(ctx, current, opts...)
 	} else {
 		diff, err := patch.New(current, spec, m.lastAppliedConfigAnnotation)
 		if err != nil {
@@ -161,26 +162,26 @@ func (m Manifest) apply(spec *unstructured.Unstructured, opts ...ApplyOption) er
 			annotate(current, "manifestival", resourceCreated)
 		}
 
-		return m.update(current, spec, opts...)
+		return m.update(ctx, current, spec, opts...)
 	}
 }
 
 // update a single resource
-func (m Manifest) update(live, spec *unstructured.Unstructured, opts ...ApplyOption) error {
+func (m Manifest) update(ctx context.Context, live, spec *unstructured.Unstructured, opts ...ApplyOption) error {
 	m.logResource("Updating", live)
 	annotate(live, m.lastAppliedConfigAnnotation, lastApplied(spec, m.lastAppliedConfigAnnotation))
-	err := m.Client.Update(live, opts...)
+	err := m.Client.Update(ctx, live, opts...)
 	if errors.IsInvalid(err) && ApplyWith(opts).Overwrite {
 		m.log.Error(err, "Failed to update merged resource, trying overwrite")
 		overlay.Copy(spec.Object, live.Object)
-		return m.Client.Update(live, opts...)
+		return m.Client.Update(ctx, live, opts...)
 	}
 	return err
 }
 
 // delete removes the specified object
-func (m Manifest) delete(spec *unstructured.Unstructured, opts ...DeleteOption) error {
-	current, err := m.get(spec)
+func (m Manifest) delete(ctx context.Context, spec *unstructured.Unstructured, opts ...DeleteOption) error {
+	current, err := m.get(ctx, spec)
 	if err != nil {
 		return err
 	}
@@ -191,17 +192,17 @@ func (m Manifest) delete(spec *unstructured.Unstructured, opts ...DeleteOption) 
 		return nil
 	}
 	m.logResource("Deleting", spec)
-	return m.Client.Delete(spec, opts...)
+	return m.Client.Delete(ctx, spec, opts...)
 }
 
 // get collects a full resource body (or `nil`) from a partial
 // resource supplied in `spec`
-func (m Manifest) get(spec *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+func (m Manifest) get(ctx context.Context, spec *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 	if spec.GetName() == "" && spec.GetGenerateName() != "" {
 		// expected to be created; never fetched
 		return nil, nil
 	}
-	result, err := m.Client.Get(spec)
+	result, err := m.Client.Get(ctx, spec)
 	if err != nil {
 		result = nil
 		if errors.IsNotFound(err) {

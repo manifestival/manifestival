@@ -2,6 +2,7 @@ package manifestival_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"testing"
@@ -13,10 +14,11 @@ import (
 
 func TestDryRun(t *testing.T) {
 	client := fake.New()
+	ctx := context.Background()
 	current, _ := NewManifest("testdata/dry/current.yaml", UseClient(client))
-	current.Apply()
+	current.Apply(ctx)
 	modified, _ := NewManifest("testdata/dry/modified.yaml", UseClient(client))
-	diffs, err := modified.DryRun()
+	diffs, err := modified.DryRun(ctx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -30,9 +32,10 @@ func TestDryRun(t *testing.T) {
 
 func TestNothingChanged(t *testing.T) {
 	client := fake.New()
+	ctx := context.Background()
 	current, _ := NewManifest("testdata/dry/current.yaml", UseClient(client))
-	current.Apply()
-	diffs, err := current.DryRun()
+	current.Apply(ctx)
+	diffs, err := current.DryRun(ctx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -43,12 +46,13 @@ func TestNothingChanged(t *testing.T) {
 
 func TestKnativeUpgrade(t *testing.T) {
 	client := fake.New()
+	ctx := context.Background()
 	old, _ := NewManifest("testdata/k-s-v0.11.0.yaml", UseClient(client))
-	old.Apply()
+	old.Apply(ctx)
 	new, _ := NewManifest("testdata/k-s-v0.12.1.yaml", UseClient(client))
 	// Transform to omit version label noise
 	unversioned, _ := new.Transform(ignoreReleaseLabel(old))
-	diffs, err := unversioned.DryRun()
+	diffs, err := unversioned.DryRun(ctx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -57,7 +61,7 @@ func TestKnativeUpgrade(t *testing.T) {
 		t.Errorf("Expected %d diffs, got %d", expected, len(diffs))
 	}
 	// Now do unfiltered
-	diffs, err = new.DryRun()
+	diffs, err = new.DryRun(ctx)
 	if err != nil {
 		t.Error(err)
 	}
