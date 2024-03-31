@@ -209,13 +209,16 @@ differences using `DryRun`, and occasionally it's even helpful to
 invoke the manifest's `Client` directly...
 
 ```go
-manifest.Apply()
-manifest.Filter(NoCRDs).Delete()
+manifest.Apply(ctx)
+manifest.Filter(NoCRDs).Delete(ctx)
 
 u := manifest.Resources()[0]
 u.SetName("foo")
-manifest.Client.Create(&u)
+manifest.Client.Create(ctx, &u)
 ```
+
+Functions that access the k8s API require a [Context](https://pkg.go.dev/context)
+object.
 
 #### fake.Client
 
@@ -226,7 +229,7 @@ override in your unit tests. For example,
 func verifySomething(t *testing.T, expected *unstructured.Unstructured) {
     client := fake.Client{
         fake.Stubs{
-            Create: func(u *unstructured.Unstructured) error {
+            Create: func(ctx context.Context, u *unstructured.Unstructured) error {
                 if !reflect.DeepEqual(u, expected) {
                     t.Error("You did it wrong!")
                 }
@@ -235,7 +238,8 @@ func verifySomething(t *testing.T, expected *unstructured.Unstructured) {
         },
     }
     manifest, _ := NewManifest("testdata/some.yaml", UseClient(client))
-    callSomethingThatUltimatelyAppliesThis(manifest)
+    ctx := context.Background()
+    callSomethingThatUltimatelyAppliesThis(ctx, manifest)
 }
 ```
 
@@ -247,9 +251,26 @@ function:
 ```go
 client := fake.New()
 current, _ := NewManifest("testdata/current.yaml", UseClient(client))
-current.Apply()
+current.Apply(ctx)
 modified, _ := NewManifest("testdata/modified.yaml", UseClient(client))
-diffs, err := modified.DryRun()
+diffs, err := modified.DryRun(ctx)
+```
+
+The default fake Client returns an error if the provided context is cancelled
+or its deadline is exceeded. This can be used to simulate network timeouts or
+graceful termination scenarios:
+
+```go
+ctx, cancel := context.WithCancel(context.Background())
+client := fake.New()
+current, _ := NewManifest("testdata/current.yaml", UseClient(client))
+current.Apply(ctx)
+cancel()
+modified, _ := NewManifest("testdata/modified.yaml", UseClient(client))
+diffs, err := modified.DryRun(ctx)
+if err != context.Canceled {
+    t.Errorf("Expected to receive context canceled, got %v")
+}
 ```
 
 ### Logging

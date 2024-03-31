@@ -1,6 +1,7 @@
 package fake
 
 import (
+	"context"
 	"fmt"
 
 	mf "github.com/manifestival/manifestival"
@@ -27,8 +28,8 @@ type Stubs struct {
 	Get    accessor
 }
 
-type mutator func(obj *unstructured.Unstructured) error
-type accessor func(obj *unstructured.Unstructured) (*unstructured.Unstructured, error)
+type mutator func(ctx context.Context, obj *unstructured.Unstructured) error
+type accessor func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error)
 
 // New returns a fully-functioning Client, "persisting" resources in a
 // map, optionally initialized with some API objects
@@ -44,7 +45,10 @@ func New(objs ...runtime.Object) Client {
 		}
 		store[key(u)] = u
 	}
-	apply := func(u *unstructured.Unstructured) error {
+	apply := func(ctx context.Context, u *unstructured.Unstructured) error {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		store[key(u)] = u
 		return nil
 	}
@@ -52,11 +56,17 @@ func New(objs ...runtime.Object) Client {
 		Stubs{
 			Create: apply,
 			Update: apply,
-			Delete: func(u *unstructured.Unstructured) error {
+			Delete: func(ctx context.Context, u *unstructured.Unstructured) error {
+				if ctx.Err() != nil {
+					return ctx.Err()
+				}
 				delete(store, key(u))
 				return nil
 			},
-			Get: func(u *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+			Get: func(ctx context.Context, u *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+				if ctx.Err() != nil {
+					return nil, ctx.Err()
+				}
 				v, found := store[key(u)]
 				if !found {
 					gvk := u.GroupVersionKind()
@@ -70,33 +80,33 @@ func New(objs ...runtime.Object) Client {
 }
 
 // Manifestival.Client.Create
-func (c Client) Create(obj *unstructured.Unstructured, options ...mf.ApplyOption) error {
+func (c Client) Create(ctx context.Context, obj *unstructured.Unstructured, options ...mf.ApplyOption) error {
 	if c.Stubs.Create != nil {
-		return c.Stubs.Create(obj)
+		return c.Stubs.Create(ctx, obj)
 	}
 	return nil
 }
 
 // Manifestival.Client.Update
-func (c Client) Update(obj *unstructured.Unstructured, options ...mf.ApplyOption) error {
+func (c Client) Update(ctx context.Context, obj *unstructured.Unstructured, options ...mf.ApplyOption) error {
 	if c.Stubs.Update != nil {
-		return c.Stubs.Update(obj)
+		return c.Stubs.Update(ctx, obj)
 	}
 	return nil
 }
 
 // Manifestival.Client.Delete
-func (c Client) Delete(obj *unstructured.Unstructured, options ...mf.DeleteOption) error {
+func (c Client) Delete(ctx context.Context, obj *unstructured.Unstructured, options ...mf.DeleteOption) error {
 	if c.Stubs.Delete != nil {
-		return c.Stubs.Delete(obj)
+		return c.Stubs.Delete(ctx, obj)
 	}
 	return nil
 }
 
 // Manifestival.Client.Get
-func (c Client) Get(obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+func (c Client) Get(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 	if c.Stubs.Get != nil {
-		return c.Stubs.Get(obj)
+		return c.Stubs.Get(ctx, obj)
 	}
 	return nil, nil
 }

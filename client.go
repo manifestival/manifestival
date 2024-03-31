@@ -1,6 +1,8 @@
 package manifestival
 
 import (
+	"context"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -11,10 +13,10 @@ const (
 
 // Client includes the operations required by the Manifestival interface
 type Client interface {
-	Create(obj *unstructured.Unstructured, options ...ApplyOption) error
-	Update(obj *unstructured.Unstructured, options ...ApplyOption) error
-	Delete(obj *unstructured.Unstructured, options ...DeleteOption) error
-	Get(obj *unstructured.Unstructured) (*unstructured.Unstructured, error)
+	Create(ctx context.Context, obj *unstructured.Unstructured, options ...ApplyOption) error
+	Update(ctx context.Context, obj *unstructured.Unstructured, options ...ApplyOption) error
+	Delete(ctx context.Context, obj *unstructured.Unstructured, options ...DeleteOption) error
+	Get(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error)
 }
 
 func ApplyWith(options []ApplyOption) *ApplyOptions {

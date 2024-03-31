@@ -1,6 +1,7 @@
 package manifestival
 
 import (
+	"context"
 	"encoding/json"
 
 	jsonpatch "github.com/evanphx/json-patch/v5"
@@ -17,8 +18,8 @@ type MergePatch map[string]interface{}
 // DryRun returns a list of merge patches, either strategic or
 // RFC-7386 for unregistered types, that show the effects of applying
 // the manifest.
-func (m Manifest) DryRun() ([]MergePatch, error) {
-	diffs, err := m.diff()
+func (m Manifest) DryRun(ctx context.Context) ([]MergePatch, error) {
+	diffs, err := m.diff(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -32,10 +33,10 @@ func (m Manifest) DryRun() ([]MergePatch, error) {
 }
 
 // diff loads the resources in the manifest and computes their difference
-func (m Manifest) diff() ([][]byte, error) {
+func (m Manifest) diff(ctx context.Context) ([][]byte, error) {
 	result := make([][]byte, 0, len(m.resources))
 	for _, spec := range m.resources {
-		current, err := m.Client.Get(&spec)
+		current, err := m.Client.Get(ctx, &spec)
 		if err != nil {
 			if errors.IsNotFound(err) {
 				// this resource will be created when applied

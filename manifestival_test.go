@@ -2,6 +2,7 @@ package manifestival_test
 
 import (
 	"bytes"
+	"context"
 	"io/ioutil"
 	"testing"
 
@@ -19,6 +20,7 @@ import (
 )
 
 func TestPortUpdates(t *testing.T) {
+	ctx := context.Background()
 	specBytes, _ := ioutil.ReadFile("testdata/kourier/deployment-spec.json")
 	editedBytes, _ := ioutil.ReadFile("testdata/kourier/deployment-edited.json")
 	spec := &unstructured.Unstructured{}
@@ -30,7 +32,7 @@ func TestPortUpdates(t *testing.T) {
 		t.Error(err)
 	}
 	c := fake.New(edited)
-	c.Stubs.Update = func(obj *unstructured.Unstructured) error {
+	c.Stubs.Update = func(ctx context.Context, obj *unstructured.Unstructured) error {
 		d := &appsv1.Deployment{}
 		scheme.Scheme.Convert(obj, d, nil)
 		names := sets.String{}
@@ -45,15 +47,16 @@ func TestPortUpdates(t *testing.T) {
 		return nil
 	}
 	manifest, _ := ManifestFrom(Slice([]unstructured.Unstructured{*spec}), UseClient(c))
-	if err := manifest.Apply(Overwrite(false)); err == nil {
+	if err := manifest.Apply(ctx, Overwrite(false)); err == nil {
 		t.Error("Should have received an invalid error")
 	}
-	if err := manifest.Apply(); err != nil {
+	if err := manifest.Apply(ctx); err != nil {
 		t.Error(err)
 	}
 }
 
 func TestLastAppliedAnnotation(t *testing.T) {
+	ctx := context.Background()
 	cm := v1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test",
@@ -70,15 +73,16 @@ func TestLastAppliedAnnotation(t *testing.T) {
 	client := fake.New(&cm)
 	// Use the unstructured for our manifest
 	m, _ := ManifestFrom(Slice([]unstructured.Unstructured{u}), UseClient(client))
-	if err := m.Apply(); err != nil {
+	if err := m.Apply(ctx); err != nil {
 		t.Error(err)
 	}
-	x, _ := m.Client.Get(&u)
+	x, _ := m.Client.Get(ctx, &u)
 	actual := x.GetAnnotations()[v1.LastAppliedConfigAnnotation]
 	assert(t, actual, expected)
 }
 
 func TestLastAppliedAnnotationAlt(t *testing.T) {
+	ctx := context.Background()
 	cm := v1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test",
@@ -96,10 +100,10 @@ func TestLastAppliedAnnotationAlt(t *testing.T) {
 	annotationName := "test.example.com/last-applied-configuration"
 	// Use the unstructured for our manifest
 	m, _ := ManifestFrom(Slice([]unstructured.Unstructured{u}), UseClient(client), UseLastAppliedConfigAnnotation(annotationName))
-	if err := m.Apply(); err != nil {
+	if err := m.Apply(ctx); err != nil {
 		t.Error(err)
 	}
-	x, _ := m.Client.Get(&u)
+	x, _ := m.Client.Get(ctx, &u)
 	actual := x.GetAnnotations()[annotationName]
 	assert(t, actual, expected)
 	actual = x.GetAnnotations()[v1.LastAppliedConfigAnnotation]
@@ -107,6 +111,7 @@ func TestLastAppliedAnnotationAlt(t *testing.T) {
 }
 
 func TestMethodChaining(t *testing.T) {
+	ctx := context.Background()
 	const expected = 6
 	const kind = "Deployment"
 	const name = "controller"
@@ -115,19 +120,19 @@ func TestMethodChaining(t *testing.T) {
 	deployments, _ := manifest.Filter(ByKind(kind)).Transform(InjectNamespace("foo"))
 	assert(t, len(deployments.Resources()), expected)
 	// Filter->Apply
-	if err := manifest.Filter(ByKind(kind)).Apply(); err != nil {
+	if err := manifest.Filter(ByKind(kind)).Apply(ctx); err != nil {
 		t.Error(err, "Expected deployments to be applied")
 	}
 	// Filter->Resources
 	u := manifest.Filter(ByKind(kind), ByName(name)).Resources()[0]
-	if _, err := manifest.Client.Get(&u); err != nil {
+	if _, err := manifest.Client.Get(ctx, &u); err != nil {
 		t.Error(err, "Expected controller deployment to be created")
 	}
 	// Filter->Delete
-	if err := manifest.Filter(ByKind(kind), ByName(name)).Delete(); err != nil {
+	if err := manifest.Filter(ByKind(kind), ByName(name)).Delete(ctx); err != nil {
 		t.Error(err)
 	}
-	if _, err := manifest.Client.Get(&u); !errors.IsNotFound(err) {
+	if _, err := manifest.Client.Get(ctx, &u); !errors.IsNotFound(err) {
 		t.Error(err, "Expected controller deployment to be deleted")
 	}
 }
@@ -168,10 +173,11 @@ conditions:
 	original := setup.Resources()[0]
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
 			client := fake.New(&original)
 			tgt, _ := ManifestFrom(Reader(config), UseClient(client))
-			tgt.Apply(Overwrite(test.overwrite))
-			obj, _ := tgt.Client.Get(&original)
+			tgt.Apply(ctx, Overwrite(test.overwrite))
+			obj, _ := tgt.Client.Get(ctx, &original)
 			actual, _, _ := unstructured.NestedSlice(obj.Object, "conditions")
 			assert(t, len(actual), test.expected)
 		})
@@ -179,6 +185,7 @@ conditions:
 }
 
 func TestApplyKeepManifestivalAnnotation(t *testing.T) {
+	ctx := context.Background()
 	current := []byte(`
 apiVersion: v1
 kind: ComponentStatus
@@ -193,23 +200,24 @@ metadata:
 	client := fake.New()
 	manifest, _ := ManifestFrom(Reader(bytes.NewReader(current)), UseClient(client))
 
-	manifest.Apply()
+	manifest.Apply(ctx)
 
-	obj, _ := client.Get(resource)
+	obj, _ := client.Get(ctx, resource)
 	if obj.GetAnnotations()["manifestival"] != "new" {
 		t.Errorf("Resource did not contain 'manifestival' annotation after first apply")
 	}
 
 	manifest2, _ := ManifestFrom(Reader(bytes.NewReader(current)), UseClient(client))
-	manifest2.Apply()
+	manifest2.Apply(ctx)
 
-	obj, _ = client.Get(resource)
+	obj, _ = client.Get(ctx, resource)
 	if obj.GetAnnotations()["manifestival"] != "new" {
 		t.Errorf("Resource did not contain 'manifestival' annotation after second apply")
 	}
 }
 
 func TestAppend(t *testing.T) {
+	ctx := context.Background()
 	u := &unstructured.Unstructured{}
 	u.SetName("testy")
 	client := fake.New(u)
@@ -224,12 +232,13 @@ func TestAppend(t *testing.T) {
 
 	assert(t, m2.Client == nil, true)
 	for _, m := range []Manifest{m1, m3, m4} {
-		q, _ := m.Client.Get(u)
+		q, _ := m.Client.Get(ctx, u)
 		assert(t, q.GetName(), u.GetName())
 	}
 }
 
 func TestNamespaceDeletion(t *testing.T) {
+	ctx := context.Background()
 	ns := v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test",
@@ -240,24 +249,25 @@ func TestNamespaceDeletion(t *testing.T) {
 	// First verify existing namespaces are *NOT* deleted
 	client := fake.New(&ns)
 	manifest, _ := ManifestFrom(Slice([]unstructured.Unstructured{u}), UseClient(client))
-	err := manifest.Apply()
+	err := manifest.Apply(ctx)
 	assert(t, err, nil)
-	err = manifest.Delete()
+	err = manifest.Delete(ctx)
 	assert(t, err, nil)
-	_, err = client.Get(&u)
+	_, err = client.Get(ctx, &u)
 	assert(t, err, nil)
 	// Now verify that newly-created namespaces *ARE* deleted
-	err = client.Delete(&u)
+	err = client.Delete(ctx, &u)
 	assert(t, err, nil)
-	err = manifest.Apply()
+	err = manifest.Apply(ctx)
 	assert(t, err, nil)
-	err = manifest.Delete()
+	err = manifest.Delete(ctx)
 	assert(t, err, nil)
-	_, err = client.Get(&u)
+	_, err = client.Get(ctx, &u)
 	assert(t, errors.IsNotFound(err), true)
 }
 
 func TestFilterNamespaceDeletion(t *testing.T) {
+	ctx := context.Background()
 	ns := v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test",
@@ -269,24 +279,25 @@ func TestFilterNamespaceDeletion(t *testing.T) {
 	client := fake.New(&ns)
 	manifest, _ := ManifestFrom(Slice([]unstructured.Unstructured{u}), UseClient(client))
 	namespace := Any(ByKind("Namespace"))
-	err := manifest.Filter(namespace).Apply()
+	err := manifest.Filter(namespace).Apply(ctx)
 	assert(t, err, nil)
-	err = manifest.Delete()
+	err = manifest.Delete(ctx)
 	assert(t, err, nil)
-	_, err = client.Get(&u)
+	_, err = client.Get(ctx, &u)
 	assert(t, err, nil)
 	// Now verify that newly-created namespaces *ARE* deleted
-	err = client.Delete(&u)
+	err = client.Delete(ctx, &u)
 	assert(t, err, nil)
-	err = manifest.Filter(namespace).Apply()
+	err = manifest.Filter(namespace).Apply(ctx)
 	assert(t, err, nil)
-	err = manifest.Delete()
+	err = manifest.Delete(ctx)
 	assert(t, err, nil)
-	_, err = client.Get(&u)
+	_, err = client.Get(ctx, &u)
 	assert(t, errors.IsNotFound(err), true)
 }
 
 func TestGenerateName(t *testing.T) {
+	ctx := context.Background()
 	job := unstructured.Unstructured{}
 	job.SetAPIVersion("batch/v1")
 	job.SetKind("Job")
@@ -294,13 +305,13 @@ func TestGenerateName(t *testing.T) {
 	count := 0
 	client := fake.Client{
 		Stubs: fake.Stubs{
-			Get: func(u *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+			Get: func(ctx context.Context, u *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 				if u.GetName() == "" {
 					return nil, errors.NewBadRequest("invalid")
 				}
 				return u, nil
 			},
-			Create: func(u *unstructured.Unstructured) error {
+			Create: func(ctx context.Context, u *unstructured.Unstructured) error {
 				count++
 				return nil
 			},
@@ -310,22 +321,32 @@ func TestGenerateName(t *testing.T) {
 	assert(t, len(manifest.Filter(ByName("")).Resources()), 1)
 	expected := 5
 	for i := 0; i < expected; i++ {
-		manifest.Apply()
+		manifest.Apply(ctx)
 	}
 	assert(t, count, expected)
 }
 
 func TestDeleteError(t *testing.T) {
+	ctx := context.Background()
 	client := fake.Client{
 		Stubs: fake.Stubs{
-			Get: func(obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+			Get: func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 				return nil, errors.NewBadRequest("TestDeleteError")
 			},
 		},
 	}
 	manifest, _ := NewManifest("testdata/k-s-v0.12.1.yaml", UseClient(client))
-	err := manifest.Delete()
+	err := manifest.Delete(ctx)
 	assert(t, err.Error(), "TestDeleteError")
+}
+
+func TestContextCancel(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	client := fake.New()
+	manifest, _ := NewManifest("testdata/k-s-v0.12.1.yaml", UseClient(client))
+	cancel()
+	err := manifest.Apply(ctx)
+	assert(t, err, context.Canceled)
 }
 
 func assert(t *testing.T, actual, expected interface{}) {
