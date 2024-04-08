@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - Updated `github.com/go-logr/logr` to v1.2.4.
 - Updated `sigs.k8s.io/yaml` to v1.3.0.
 - Optionally allow annotation name different than LastAppliedConfigAnnotation [#97](https://github.com/manifestival/manifestival/issues/97)
+- Add context-awareness to clients. **Note: this introduces breaking changes to `Apply`, `Delete`, and all `Client` function calls.** [#101](https://github.com/manifestival/manifestival/issues/101)
 
 ### Added
 
